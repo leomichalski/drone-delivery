@@ -87,11 +87,17 @@ def parse_args():
         type=int, default=360*24*60*60,
         help="time out in seconds (default: 360 days) or"
     )
+    ap.add_argument(
+        "--using_ros",
+        action='store_true', default=False,
+        help="ros bridge to pass the computer vision information to the flight control code"
+    )
     args = ap.parse_args()
 
     if args.do_everything:
         args.predict_image = True
         args.webstream_video = True
+        args.using_ros = True
 
     if not args.do_everything \
             and not args.predict_image \
@@ -128,6 +134,11 @@ def main(args):
             class_names=utils.categories_file_to_class_names("categories.txt"),
             threshold=0.5,
         )
+        # wait for the image classifier model to load
+        # time.sleep(1)
+
+    if args.using_ros:
+        ros_bridge = RosBridge()
 
     if 'video_source' in locals():
         print('STARTING CAMERA')
@@ -149,8 +160,10 @@ def main(args):
     if 'image_predictor' in locals():
         print('STARTING IMAGE PREDICTOR')
         video_source.subscribe(image_predictor)
-        # warmup the image predictor
-        # time.sleep(1)
+        
+    if 'ros_bridge' in locals():
+        print('STARTING ROS BRIDGE')
+        ros_bridge.subscribe(image_predictor)
 
     try:
         time.sleep(args.time_out)
