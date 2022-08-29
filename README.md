@@ -8,4 +8,4 @@
   * [imageclassifier.py](./imageclassifier.py): arquivo que encapsula o classificador de imagens (supondo que haja só um classificador de imagens).
   * [categories.txt](./categories.txt): categorias do classificador de imagens (supondo que haja só um classificador de imagens).
   * [requirements.txt](./requirements.txt): arquivo com as versões das bibliotecas Python utilizadas.
-  * [utils.py](./utils.py): métodos que ajudam em alguma coisa "miscellaneous".
+  * [utils.py](./utils.py): métodos aleatórios que ajudam em algo (tipo um "miscellaneous").
