@@ -148,7 +148,7 @@ def main(args):
 
     if 'image_predictor' in locals():
         print('STARTING IMAGE PREDICTOR')
-        image_source.subscribe(image_predictor)
+        video_source.subscribe(image_predictor)
         # warmup the image predictor
         # time.sleep(1)
 
