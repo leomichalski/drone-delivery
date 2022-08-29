@@ -1,5 +1,5 @@
-
 #### Explicação dos arquivos
+
 * **imav2022**: pasta do repositório.
   * [main.py](./main.py): arquivo que roda o programa e faz tudo funcionar em conjunto.
   * [videosource.py](./videosource.py): pega as imagens da câmera.
@@ -9,3 +9,19 @@
   * [categories.txt](./categories.txt): categorias do classificador de imagens (supondo que haja só um classificador de imagens).
   * [requirements.txt](./requirements.txt): arquivo com as versões das bibliotecas Python utilizadas.
   * [utils.py](./utils.py): métodos aleatórios que ajudam em algo (tipo um "miscellaneous").
+
+
+#### Como rodar
+
+```
+python3 main.py
+```
+
+
+#### Como instalar
+
+```
+pip3 install requirements.txt
+```
+
+
