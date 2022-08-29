@@ -1,0 +1,6 @@
+<launch>
+  <include file="/opt/ros/noetic/share/gazebo_ros/launch/empty_world.launch">
+  <!-- <include file="$(find gazebo_ros)/launch/empty_world.launch"> -->
+    <arg name="world_name" value="/home/leommiranda/catkin_workspaces/catkin_ws/src/project00/worlds/hills.world"/>
+  </include>
+</launch>
