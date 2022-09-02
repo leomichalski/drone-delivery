@@ -17,7 +17,7 @@ class ArucoDetector(object):
         # Initialize the detector parameters using default values
         self.detector_parameters = cv2.aruco.DetectorParameters_create()
 
-        self.lut = np.interp(np.arange(0, 256), [0, 158, 216, 255], [0, 22, 80, 176]).astype(np.uint8)
+        self.lookup_table = np.interp(np.arange(0, 256), [0, 158, 216, 255], [0, 22, 80, 176]).astype(np.uint8)
 
         self.dont_detect_aruco = False
         self.subscriber_list = []
@@ -33,13 +33,8 @@ class ArucoDetector(object):
     def predict(self, img):
         start_time = time.time()
 
-        # # adjust colors for better recognition
-        img = cv2.LUT(img, self.lut)
-
-        # Convert to grayscale
+        img = cv2.LUT(img, self.lookup_table)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-        # detect aruco tags within the frame
         marker_corner_list, marker_id_list, rejected_candidates = cv2.aruco.detectMarkers(img, self.dictionary, parameters=self.detector_parameters)
 
         # # check duplicate ids
