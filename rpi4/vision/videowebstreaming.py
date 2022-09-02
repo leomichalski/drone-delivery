@@ -27,7 +27,7 @@ class EndpointAction(object):
 
 class VideoWebStreaming(object):
 
-    app = None  # wannabe flask object
+    app = None
 
     def __init__(self, ip, port,
                  frame_width, frame_height):

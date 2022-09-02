@@ -20,29 +20,45 @@ def parse_args():
     )
     # what should the app do
     ap.add_argument(
-        "--webstream_video",
+        "--webstream-video",
         action='store_true', default=False,
         help=""
     )
     ap.add_argument(
-        "--detect_aruco",
+        "--detect-aruco",
         action='store_true', default=False,
         help=""
     )
     ap.add_argument(
-        "--using_vpn",
+        "--using-vpn",
         action='store_true', default=False,
         help=""
     )
     ap.add_argument(
-        "--do_everything",
+        "--using-ros",
+        action='store_true', default=False,
+        help="ros bridge to pass the computer vision information to the flight control code"
+    )
+    ap.add_argument(
+        "--using-gazebo",
+        action='store_true', default=False,
+        help="ros bridge to pass the computer vision information to the flight control code"
+    )
+
+    ap.add_argument(
+        "--mode-px4",
+        action='store_true', default=False,
+        help=""
+    )
+    ap.add_argument(
+        "--mode-gazebo",
         action='store_true', default=False,
         help=""
     )
 
     # camera stuff
     ap.add_argument(
-        "--frames_per_second",
+        "--frames-per-second",
         type=int, default=25,
         help="frames per second"
     )
@@ -52,55 +68,59 @@ def parse_args():
         help="frame width"
     )
     ap.add_argument(
-        "-H", "--frame_height",
+        "-H", "--frame-height",
         type=int, default=480,
         help="frame height"
     )
     ap.add_argument(
-        "--frame_rotation",
+        "--frame-rotation",
         type=int, default=180,
         help="camera rotation"
 
     )
     ap.add_argument(
-        "--frame_channels",
+        "--frame-channels",
         type=int, default=3,
         help="frame number of channels"
     )
 
     # web streaming stuff
     ap.add_argument(
-        "--web_streaming_port",
+        "--web-streaming-port",
         type=int, default=8090,
         help="ephemeral port number of the server (1024 to 65535)"
     )
 
     # other stuff
     ap.add_argument(
-        "-t", "--time_out",
+        "-t", "--time-out",
         type=int, default=360*24*60*60,
         help="time out in seconds (default: 360 days) or"
     )
-    ap.add_argument(
-        "--using_ros",
-        action='store_true', default=False,
-        help="ros bridge to pass the computer vision information to the flight control code"
-    )
     args = ap.parse_args()
+    print(args)
 
-    if args.do_everything:
-        args.detect_aruco = True
+    if args.mode_gazebo:
         args.webstream_video = True
+        args.detect_aruco = True
         args.using_ros = True
-        args.using_vpn = True
+        args.using_gazebo = True
 
-    if not args.do_everything \
-            and not args.detect_aruco \
-            and not args.webstream_video:
+    if args.mode_px4:
+        args.webstream_video = True
+        args.detect_aruco = True
+        args.using_ros = True
+        # args.using_vpn = True
+
+    if not args.mode_gazebo \
+            and not args.mode_px4 \
+            and not args.webstream_video \
+            and not args.detect_aruco:
         raise Exception('Please select at least one of the following options: '
-                        '--' + 'do_everything' + '; '
-                        '--' + 'detect_aruco' + '; '
-                        '--' + 'webstream_video' + '. ')
+                        '--' + 'mode_gazebo' + '; '
+                        '--' + 'mode_px4' + '; '
+                        '--' + 'webstream_video' + '; '
+                        '--' + 'detect_aruco' + '. ')
 
     return args
 
