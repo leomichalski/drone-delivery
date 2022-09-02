@@ -6,6 +6,7 @@
 #         self.elapsed_time = elapsed_time
 #         self.image_creation_time = image_creation_time
 
+
 class ArucoDetection(object):
     def __init__(self, corner_list, id_list, elapsed_time, image_creation_time):
         self.corner_list = corner_list
@@ -18,3 +19,8 @@ class Image(object):
     def __init__(self, image, creation_time):
         self.image = image
         self.creation_time = creation_time
+
+
+class Boolean(object):
+    def __init__(self, boolean):
+        self.boolean = boolean

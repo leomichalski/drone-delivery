@@ -2,6 +2,7 @@ import time
 import argparse
 
 from arucodetector import *
+from rosbridge import *
 from topics import *
 from videosource import *
 from videowebstreaming import *
@@ -164,9 +165,12 @@ def main(args):
 
     if 'ros_bridge' in locals():
         print('STARTING ROS BRIDGE')
-        ros_bridge.subscribe(aruco_detector)
+        ros_bridge.start()
+        nodes_to_stop.append(ros_bridge)
 
-    print(video_source.subscriber_list)
+    if ('ros_bridge' in locals()) and ('aruco_detector' in locals()):
+        aruco_detector.subscribe(ros_bridge)
+
     print("ALL NODES STARTED")
     try:
         time.sleep(args.time_out)
