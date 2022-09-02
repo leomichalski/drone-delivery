@@ -1,11 +1,9 @@
 import time
 import argparse
 
-from arucodetector import *
-from rosbridge import *
-from topics import *
-from videosource import *
-from videowebstreaming import *
+from arucodetector import ArucoDetector
+from rosbridge import RosBridge, GazeboVideoSource
+from videowebstreaming import VideoWebStreaming
 import utils
 
 
@@ -30,11 +28,6 @@ def parse_args():
         help=""
     )
     ap.add_argument(
-        "--using-vpn",
-        action='store_true', default=False,
-        help=""
-    )
-    ap.add_argument(
         "--using-ros",
         action='store_true', default=False,
         help="ros bridge to pass the computer vision information to the flight control code"
@@ -46,12 +39,17 @@ def parse_args():
     )
 
     ap.add_argument(
-        "--mode-px4",
+        "--mode-raspberry",
         action='store_true', default=False,
         help=""
     )
     ap.add_argument(
         "--mode-gazebo",
+        action='store_true', default=False,
+        help=""
+    )
+    ap.add_argument(
+        "--using-vpn",
         action='store_true', default=False,
         help=""
     )
@@ -100,25 +98,30 @@ def parse_args():
     args = ap.parse_args()
     print(args)
 
+    if args.using_gazebo:
+        args.using_ros = True
+
     if args.mode_gazebo:
         args.webstream_video = True
         args.detect_aruco = True
         args.using_ros = True
         args.using_gazebo = True
+        args.using_vpn = False
 
-    if args.mode_px4:
+    if args.mode_raspberry:
         args.webstream_video = True
         args.detect_aruco = True
         args.using_ros = True
-        # args.using_vpn = True
+        args.using_gazebo = False
+        # args.using_vpn = True  # it depends on your network choice
 
     if not args.mode_gazebo \
-            and not args.mode_px4 \
+            and not args.mode_raspberry \
             and not args.webstream_video \
             and not args.detect_aruco:
         raise Exception('Please select at least one of the following options: '
                         '--' + 'mode_gazebo' + '; '
-                        '--' + 'mode_px4' + '; '
+                        '--' + 'mode_raspberry' + '; '
                         '--' + 'webstream_video' + '; '
                         '--' + 'detect_aruco' + '. ')
 
@@ -134,13 +137,17 @@ def main(args):
         ip = utils.get_rpi_ip()
 
 
-    if args.webstream_video or args.detect_aruco:
+    if (args.webstream_video or args.detect_aruco) and (not args.using_gazebo):
+        from videosource import VideoSource
         video_source = VideoSource(
             frame_width=args.frame_width,
             frame_height=args.frame_height,
             frames_per_second=args.frames_per_second,
             rotation=args.frame_rotation,
         )
+
+    if args.using_gazebo:
+        gazebo_video_source = GazeboVideoSource()
 
     if args.webstream_video:
         video_web_streaming = VideoWebStreaming(
@@ -169,9 +176,14 @@ def main(args):
         # warmup the camera
         time.sleep(2)
 
+    if ('video_web_streaming' in locals()) and ('video_source' in locals()):
+        video_source.subscribe(video_web_streaming)
+
+    if ('video_web_streaming' in locals()) and ('gazebo_video_source' in locals()):
+        gazebo_video_source.subscribe(video_web_streaming)
+
     if 'video_web_streaming' in locals():
         print('STARTING THE VIDEO WEB STREAMING')
-        video_source.subscribe(video_web_streaming)
         video_web_streaming.start(
             # threaded=True,
             use_reloader=False,
@@ -179,14 +191,22 @@ def main(args):
         )
         nodes_to_stop.append(video_web_streaming)
 
-    if 'aruco_detector' in locals():
+    if ('aruco_detector' in locals()) and ('video_source' in locals()):
         print('STARTING ARUCO DETECTOR')
         video_source.subscribe(aruco_detector)
+
+    if ('aruco_detector' in locals()) and ('gazebo_video_source' in locals()):
+        print('STARTING ARUCO DETECTOR')
+        gazebo_video_source.subscribe(aruco_detector)
+
 
     if 'ros_bridge' in locals():
         print('STARTING ROS BRIDGE')
         ros_bridge.start()
         nodes_to_stop.append(ros_bridge)
+
+
+
 
     if ('ros_bridge' in locals()) and ('aruco_detector' in locals()):
         aruco_detector.subscribe(ros_bridge)

@@ -1,8 +1,10 @@
-# import time
+import time
 
-# import numpy as np
+import cv2
+import numpy as np
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
+from sensor_msgs.msg import Image
 
 import topics
 import msgs
@@ -12,7 +14,7 @@ class RosBridge(object):
     def __init__(self):
         self.subscriber_list = []
         self.pub_aruco_detection = rospy.Publisher('aruco_detection', String, queue_size=10)
-        self.pub_dont_detect_aruco = rospy.Publisher('dont_detect_aruco', String, queue_size=10)
+        self.pub_dont_detect_aruco = rospy.Publisher('dont_detect_aruco', Bool, queue_size=10)
 
     def subscribe(self, subscriber):
         self.subscriber_list.append(subscriber)
@@ -30,7 +32,8 @@ class RosBridge(object):
             self.pub_aruco_detection.publish("elapsed_time:" + str(msg.elapsed_time))  # TODO: change to ArucoDetection msg
             return
         elif topic == topics.TOPIC_DONT_DETECT_ARUCO:
-            self.pub_dont_detect_aruco.publish("Dont detect aruco")  # TODO: change to Boolean msg
+            self.pub_dont_detect_aruco.publish(True)  # todo: comment this line
+            # self.pub_dont_detect_aruco.publish(msg.boolean)  # todo: uncomment this line
             return
 
     def start(self):
@@ -42,7 +45,7 @@ class RosBridge(object):
 
 class GazeboVideoSource(object):
     def __init__(self):
-        self.camera_ros_node = rospy.Subscriber("??????", String, analyze)  # TODO
+        self.camera_ros_node = rospy.Subscriber("/webcam/image_raw", Image, self.analyze)
         self.subscriber_list = []
 
     def subscribe(self, subscriber):
@@ -53,9 +56,14 @@ class GazeboVideoSource(object):
             subscriber.receive_msg(msg=msg, topic=topic)
 
     def analyze(self, data):
-        img_jpeg = data.data  # TODO
-        img_array = data.data  # TODO
-        creation_time = 0  # TODO
+
+        img_array = np.fromstring(data.data, dtype=np.uint8).reshape((data.height, data.width, 3))
+        _, img_jpeg = cv2.imencode('.jpg', img_array.copy())  # TODO
+        img_jpeg = img_jpeg.tostring()
+
+        # for simulation purposes, consider the current time as the image creation time
+        creation_time = time.time()
+
         self.publish(
             msg=msgs.Image(image=img_jpeg, creation_time=creation_time),
             topic=topics.TOPIC_IMAGE_JPEG
