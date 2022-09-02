@@ -2,7 +2,7 @@ opencv-contrib-python==4.5.3.56
 Flask==1.0.*
 imageio==2.9.0
 imageio-ffmpeg==0.4.2
-numpy==1.16.*
+numpy==1.20.0
 picamera==1.13
 Jinja2==2.10.*
 markupsafe==2.0.1
