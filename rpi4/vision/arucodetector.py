@@ -16,6 +16,8 @@ class ArucoDetector(object):
 
         # Initialize the detector parameters using default values
         self.detector_parameters = cv2.aruco.DetectorParameters_create()
+        self.detector_parameters.perspectiveRemoveIgnoredMarginPerCell = 0.3  # default 0.13
+        self.detector_parameters.minMarkerPerimeterRate = 0.01  # default 0.03
 
         self.lookup_table = np.interp(np.arange(0, 256), [0, 158, 216, 255], [0, 22, 80, 176]).astype(np.uint8)
 
