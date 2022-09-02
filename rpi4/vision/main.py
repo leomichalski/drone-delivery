@@ -1,7 +1,7 @@
 import time
 import argparse
 
-from imageclassifier import *
+from arucodetector import *
 from topics import *
 from videosource import *
 from videowebstreaming import *
@@ -159,13 +159,15 @@ def main(args):
         nodes_to_stop.append(video_web_streaming)
 
     if 'aruco_detector' in locals():
-        print('STARTING IMAGE PREDICTOR')
+        print('STARTING ARUCO DETECTOR')
         video_source.subscribe(aruco_detector)
-        
+
     if 'ros_bridge' in locals():
         print('STARTING ROS BRIDGE')
         ros_bridge.subscribe(aruco_detector)
 
+    print(video_source.subscriber_list)
+    print("ALL NODES STARTED")
     try:
         time.sleep(args.time_out)
     finally:

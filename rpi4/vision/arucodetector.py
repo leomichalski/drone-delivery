@@ -1,5 +1,10 @@
-import cv2
 import time
+
+import cv2
+import numpy as np
+
+import topics
+import msgs
 
 
 class ArucoDetector(object):
@@ -11,6 +16,8 @@ class ArucoDetector(object):
 
         # Initialize the detector parameters using default values
         self.detector_parameters = cv2.aruco.DetectorParameters_create()
+
+        self.lut = np.interp(np.arange(0, 256), [0, 158, 216, 255], [0, 22, 80, 176]).astype(np.uint8)
 
         self.dont_detect_aruco = False
         self.subscriber_list = []
@@ -27,13 +34,13 @@ class ArucoDetector(object):
         start_time = time.time()
 
         # # adjust colors for better recognition
-        # img = cv2.LUT(frame, self.lut)
+        img = cv2.LUT(img, self.lut)
 
         # Convert to grayscale
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # detect aruco tags within the frame
-        marker_corner_list, marker_id_list, rejected_candidates = cv2.aruco.detectMarkers(img, self.dictionary, parameters=self.detection_parameters)
+        marker_corner_list, marker_id_list, rejected_candidates = cv2.aruco.detectMarkers(img, self.dictionary, parameters=self.detector_parameters)
 
         # # check duplicate ids
         # idsl = [pid[0] for pid in ids]
@@ -84,7 +91,14 @@ class ArucoDetector(object):
         elif topic == topics.TOPIC_IMAGE_ARRAY:
             if self.dont_detect_aruco:
                 return
-            elapsed_time, marker_id_list, marker_corner_list = self.predict(msg.image_array.copy())
+            elapsed_time, marker_id_list, marker_corner_list = self.predict(msg.image.copy())
             prediction_msg = msgs.ArucoDetection(corner_list=marker_corner_list, id_list=marker_id_list, elapsed_time=elapsed_time, image_creation_time=msg.creation_time)
+            print(
+                "ids:", marker_id_list,
+                "corners:", marker_corner_list, 
+                "elapsed_time:", elapsed_time, 
+                "FPS:", round(1/elapsed_time), 
+                "image_creation_time:", msg.creation_time,
+            )
             self.publish(prediction_msg, topics.TOPIC_ARUCO_DETECTION)
             return
