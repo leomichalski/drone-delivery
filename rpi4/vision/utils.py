@@ -11,6 +11,11 @@ def get_rpi_ip():
     cmd = "hostname -I | awk '{print \"\"$1\"\"}'"
     return check_output(cmd, shell=True).decode('utf-8').rstrip()
 
+def get_rpi_vpn_ip():
+    cmd = "hostname -I | awk '{print \"\"$2\"\"}'"
+    return check_output(cmd, shell=True).decode('utf-8').rstrip()
+
+
 
 def ensure_loop_rate(rate, loop_time):
     """ Waits a bit to ensure a loop rate

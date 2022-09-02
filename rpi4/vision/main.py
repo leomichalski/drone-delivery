@@ -24,7 +24,12 @@ def parse_args():
         help=""
     )
     ap.add_argument(
-        "--predict_image",
+        "--detect_aruco",
+        action='store_true', default=False,
+        help=""
+    )
+    ap.add_argument(
+        "--using_vpn",
         action='store_true', default=False,
         help=""
     )
@@ -32,18 +37,6 @@ def parse_args():
         "--do_everything",
         action='store_true', default=False,
         help=""
-    )
-
-    # image detection stuff
-    ap.add_argument(
-        "--categories_file",
-        type=str, default='categories.txt',
-        help="file containing the image model categories"
-    )
-    ap.add_argument(
-        "--image_classifier_threshold",
-        type=float, default=0.6,
-        help="image classifier threshold"
     )
 
     # camera stuff
@@ -95,16 +88,17 @@ def parse_args():
     args = ap.parse_args()
 
     if args.do_everything:
-        args.predict_image = True
+        args.detect_aruco = True
         args.webstream_video = True
         args.using_ros = True
+        args.using_vpn = True
 
     if not args.do_everything \
-            and not args.predict_image \
+            and not args.detect_aruco \
             and not args.webstream_video:
         raise Exception('Please select at least one of the following options: '
                         '--' + 'do_everything' + '; '
-                        '--' + 'predict_image' + '; '
+                        '--' + 'detect_aruco' + '; '
                         '--' + 'webstream_video' + '. ')
 
     return args
@@ -113,7 +107,13 @@ def parse_args():
 def main(args):
     nodes_to_stop = []
 
-    if args.webstream_video or args.predict_image:
+    if args.using_vpn:
+        ip = utils.get_rpi_vpn_ip()
+    else:
+        ip = utils.get_rpi_ip()
+
+
+    if args.webstream_video or args.detect_aruco:
         video_source = VideoSource(
             frame_width=args.frame_width,
             frame_height=args.frame_height,
@@ -123,17 +123,18 @@ def main(args):
 
     if args.webstream_video:
         video_web_streaming = VideoWebStreaming(
-            ip=utils.get_rpi_ip(),
+            ip=ip,
             port=args.web_streaming_port,
             frame_width=args.frame_width,
             frame_height=args.frame_height,
         )
 
-    if args.predict_image:
-        image_predictor = ImagePredictor(
-            class_names=utils.categories_file_to_class_names("categories.txt"),
-            threshold=0.5,
-        )
+    if args.detect_aruco:
+        # image_predictor = ImagePredictor(
+        #     class_names=utils.categories_file_to_class_names("categories.txt"),
+        #     threshold=0.5,
+        # )
+        aruco_detector = ArucoDetector()
         # wait for the image classifier model to load
         # time.sleep(1)
 
@@ -157,13 +158,13 @@ def main(args):
         )
         nodes_to_stop.append(video_web_streaming)
 
-    if 'image_predictor' in locals():
+    if 'aruco_detector' in locals():
         print('STARTING IMAGE PREDICTOR')
-        video_source.subscribe(image_predictor)
+        video_source.subscribe(aruco_detector)
         
     if 'ros_bridge' in locals():
         print('STARTING ROS BRIDGE')
-        ros_bridge.subscribe(image_predictor)
+        ros_bridge.subscribe(aruco_detector)
 
     try:
         time.sleep(args.time_out)
