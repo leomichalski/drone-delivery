@@ -25,7 +25,7 @@ class EndpointAction(object):
         return self.response
 
 
-class VideoWebStreaming:
+class VideoWebStreaming(object):
 
     app = None  # wannabe flask object
 
