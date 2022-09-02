@@ -1,4 +1,9 @@
 from subprocess import check_output
+import rosgraph
+
+
+def is_roscore_running():
+    return rosgraph.is_master_online()
 
 
 def categories_file_to_class_names(categories_file_path):
@@ -14,7 +19,6 @@ def get_rpi_ip():
 def get_rpi_vpn_ip():
     cmd = "hostname -I | awk '{print \"\"$2\"\"}'"
     return check_output(cmd, shell=True).decode('utf-8').rstrip()
-
 
 
 def ensure_loop_rate(rate, loop_time):
