@@ -1,9 +1,6 @@
 
 #### Explicação dos arquivos
 * **imav2022**: pasta do repositório.
-  * **sim**: pasta das simulações.
-  * **rpi4**: pasta do código que vai na raspberry 4.
-  * **scripts**: pasta com scripts úteis ou que são rodados quando a raspberry é ligada.
-
-#### Como rodar
-```
+  * **flight**: pasta do voo e das simulações de voo.
+  * **vision**: pasta do código relacionado a Visão Computacional.
+  * **scripts**: pasta com scripts úteis. Alguns deles são rodados quando a raspberry é ligada.
