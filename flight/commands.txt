@@ -31,3 +31,10 @@ mode guided
 
 
 
+
+
+
+# launch mavros node from raspberry
+
+roslaunch mavros apm.launch fcu_url:=/dev/serial0:115200
+

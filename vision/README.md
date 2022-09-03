@@ -9,20 +9,34 @@
 * [msgs.py](./msgs.py): mensagens da arquitetura "Publish/Subscribe".
 * [utils.py](./utils.py): métodos aleatórios que ajudam em algo (tipo um "miscellaneous").
 * [rosbridge.py](./rosbridge.py): ponte para fazer o código em Python na arquitetura "Publish/Subscribe" funcionar com o código em ROS (que está em outra arquitetura "Publish/Subscribe").
-* [requirements.txt](./requirements.txt): arquivo com as versões das bibliotecas Python utilizadas.
+* [requirements_raspberry.txt](./requirements_raspberry.txt): arquivo com as versões das bibliotecas Python utilizadas na raspberry.
+* [requirements_gazebo.txt](./requirements_gazebo.txt): arquivo com as versões das bibliotecas Python utilizadas em conjunto com o gazebo.
 
 
 #### Como rodar
 
 ```
-python3 main.py
-```
+# no computador com gazebo
+python3 main.py --mode-gazebo
 
+# na raspberry
+python3 main.py --mode-raspberry
+
+# WARNING! Se estiver usando a VPN adicione a flag "--using-vpn". Por exemplo,
+python3 main.py --mode-raspberry --using-vpn
+
+
+```
 
 #### Como instalar
 
 ```
-pip3 install requirements.txt
+# criar ambiente virtual
+python3 -m venv --system-site-packages
+
+# instalar na raspberry
+pip3 install requirements_raspberry.txt
+
+# instalar no computador com gazebo
+pip3 install requirements_gazebo.txt
 ```
-
-
