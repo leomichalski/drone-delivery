@@ -4,6 +4,7 @@ import argparse
 from arucodetector import ArucoDetector
 from rosbridge import RosBridge, GazeboVideoSource
 from videowebstreaming import VideoWebStreaming
+from videosaver import VideoSaver
 import utils
 
 
@@ -19,6 +20,11 @@ def parse_args():
     # what should the app do
     ap.add_argument(
         "--webstream-video",
+        action='store_true', default=False,
+        help=""
+    )
+    ap.add_argument(
+        "--save-video",
         action='store_true', default=False,
         help=""
     )
@@ -39,12 +45,17 @@ def parse_args():
     )
 
     ap.add_argument(
+        "--mode-gazebo",
+        action='store_true', default=False,
+        help=""
+    )
+    ap.add_argument(
         "--mode-raspberry",
         action='store_true', default=False,
         help=""
     )
     ap.add_argument(
-        "--mode-gazebo",
+        "--mode-raspberry-simulation",
         action='store_true', default=False,
         help=""
     )
@@ -61,7 +72,7 @@ def parse_args():
         help="frames per second"
     )
     ap.add_argument(
-        "-W", "--frame_width",
+        "-W", "--frame-width",
         type=int, default=640,
         help="frame width"
     )
@@ -89,6 +100,18 @@ def parse_args():
         help="ephemeral port number of the server (1024 to 65535)"
     )
 
+    # video saving stuff
+    ap.add_argument(
+        "--video-output-time-limit",
+        type=int, default=15*60,
+        help="video time limit in seconds (default: 15min)"
+    )
+    ap.add_argument(
+        "--video-output-folder",
+        type=str, default='/home',
+        help="folder path to store videos"
+    )
+
     # other stuff
     ap.add_argument(
         "-t", "--time-out",
@@ -96,7 +119,6 @@ def parse_args():
         help="time out in seconds (default: 360 days) or"
     )
     args = ap.parse_args()
-    print(args)
 
     if args.using_gazebo:
         args.using_ros = True
@@ -115,15 +137,27 @@ def parse_args():
         args.using_gazebo = False
         # args.using_vpn = True  # it depends on your network choice
 
+    if args.mode_raspberry_simulation:
+        args.webstream_video = True
+        args.save_video = True
+        args.detect_aruco = True
+        args.using_ros = True
+        args.using_gazebo = False
+        # args.using_vpn = True  # it depends on your network choice
+
     if not args.mode_gazebo \
             and not args.mode_raspberry \
+            and not args.mode_raspberry_simulation \
             and not args.webstream_video \
+            and not args.save_video \
             and not args.detect_aruco:
         raise Exception('Please select at least one of the following options: '
-                        '--' + 'mode_gazebo' + '; '
-                        '--' + 'mode_raspberry' + '; '
-                        '--' + 'webstream_video' + '; '
-                        '--' + 'detect_aruco' + '. ')
+                        '--' + 'mode-gazebo' + '; '
+                        '--' + 'mode-raspberry' + '; '
+                        '--' + 'mode-raspberry-simulation' + '; '
+                        '--' + 'webstream-video' + '; '
+                        '--' + 'save-video' + '; '
+                        '--' + 'detect-aruco' + '. ')
 
     return args
 
@@ -137,7 +171,7 @@ def main(args):
         ip = utils.get_rpi_ip()
 
 
-    if (args.webstream_video or args.detect_aruco) and (not args.using_gazebo):
+    if (args.save_video or args.webstream_video or args.detect_aruco) and (not args.using_gazebo):
         from videosource import VideoSource
         video_source = VideoSource(
             frame_width=args.frame_width,
@@ -155,6 +189,15 @@ def main(args):
             port=args.web_streaming_port,
             frame_width=args.frame_width,
             frame_height=args.frame_height,
+        )
+
+    if args.save_video:
+        video_saver = VideoSaver(
+            frames_per_second=args.frames_per_second,
+            frame_width=args.frame_width,
+            frame_height=args.frame_height,
+            output_time_limit=args.video_output_time_limit,
+            output_folder=args.video_output_folder,
         )
 
     if args.detect_aruco:
@@ -190,6 +233,17 @@ def main(args):
             # debug=True,
         )
         nodes_to_stop.append(video_web_streaming)
+
+    if ('video_saver' in locals()) and ('video_source' in locals()):
+        video_source.subscribe(video_saver)
+
+    if ('video_saver' in locals()) and ('gazebo_video_source' in locals()):
+        gazebo_video_source.subscribe(video_saver)
+
+    if 'video_saver' in locals():
+        print('STARTING THE VIDEO SAVER')
+        video_saver.start()
+        nodes_to_stop.append(video_saver)
 
     if ('aruco_detector' in locals()) and ('video_source' in locals()):
         print('STARTING ARUCO DETECTOR')
