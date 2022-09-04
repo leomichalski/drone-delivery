@@ -72,22 +72,22 @@ def parse_args():
         help="frames per second"
     )
     ap.add_argument(
-        "-W", "--frame-width",
-        type=int, default=640,
+        "--frame-width",
+        type=int, default=1920,
         help="frame width"
     )
     ap.add_argument(
-        "-H", "--frame-height",
-        type=int, default=480,
+        "--frame-height",
+        type=int, default=1080,
         help="frame height"
     )
     ap.add_argument(
-        "-W", "--streaming-frame-width",
+        "--streaming-frame-width",
         type=int, default=256,
         help="frame width"
     )
     ap.add_argument(
-        "-H", "--streaming-frame-height",
+        "--streaming-frame-height",
         type=int, default=144,
         help="frame height"
     )
