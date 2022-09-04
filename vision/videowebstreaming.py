@@ -29,12 +29,9 @@ class VideoWebStreaming(object):
 
     app = None
 
-    def __init__(self, ip, port,
-                 frame_width, frame_height):
+    def __init__(self, ip, port):
         self.ip = ip
         self.port = port
-        self.frame_width = frame_width
-        self.frame_height = frame_height
         self.stopped = True
         self.latest_image_jpeg = None
         self.image_condition = Condition()
