@@ -68,7 +68,7 @@ def parse_args():
     # camera stuff
     ap.add_argument(
         "--frames-per-second",
-        type=int, default=25,
+        type=int, default=7,
         help="frames per second"
     )
     ap.add_argument(
