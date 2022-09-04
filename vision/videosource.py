@@ -37,9 +37,11 @@ class ArrayOutput(PiRGBAnalysis):
 
 class VideoSource(object):
 
-    def __init__(self, frame_height, frame_width, frames_per_second, **kwargs):
+    def __init__(self, frame_height, frame_width, streaming_frame_width, streaming_frame_height, frames_per_second, **kwargs):
         self.frame_height = frame_height
         self.frame_width = frame_width
+        self.streaming_frame_height = streaming_frame_height
+        self.streaming_frame_width = streaming_frame_width
         self.frames_per_second = frames_per_second
         self.camera = picamera.PiCamera(
             resolution=(self.frame_width, self.frame_height),
@@ -79,12 +81,13 @@ class VideoSource(object):
         self.camera.start_recording(
             self.array_output,
             splitter_port=1,
-            format='rgb'
+            format='rgb',
         )
         self.camera.start_recording(
             self.jpeg_output,
             splitter_port=2,
-            format='mjpeg'
+            format='mjpeg',
+            resize=(self.streaming_frame_width, self.streaming_frame_height),
         )
 
     def stop(self):
