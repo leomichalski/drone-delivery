@@ -35,7 +35,6 @@ class RosBridge(object):
                 elapsed_time=msg.elapsed_time,
                 image_creation_time=msg.image_creation_time,
             )
-            # self.aruco_detection_publisher.publish("elapsed_time:" + str(msg.elapsed_time))  # TODO: change to ArucoDetection msg
             return
         # elif topic == topics.TOPIC_DONT_DETECT_ARUCO:
 
