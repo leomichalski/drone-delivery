@@ -89,6 +89,7 @@ class ArucoDetector(object):
             if self.dont_detect_aruco:
                 return
             elapsed_time, marker_id_list, marker_corner_list = self.predict(msg.image.copy())
+            # TODO: a separate message for each marker id
             prediction_msg = msgs.ArucoDetection(corner_list=marker_corner_list, id_list=marker_id_list, elapsed_time=elapsed_time, image_creation_time=msg.creation_time)
             print(
                 "ids:", marker_id_list,
