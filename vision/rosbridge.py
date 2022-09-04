@@ -13,7 +13,7 @@ import msgs
 class RosBridge(object):
     def __init__(self):
         self.subscriber_list = []
-        self.pub_aruco_detection = rospy.Publisher('aruco_detection', String, queue_size=10)
+        self.pub_aruco_detection = rospy.Publisher('aruco_detection', String, queue_size=10)  # TODO: adjust queue size
         self.pub_dont_detect_aruco = rospy.Publisher('dont_detect_aruco', Bool, queue_size=10)
 
     def subscribe(self, subscriber):
