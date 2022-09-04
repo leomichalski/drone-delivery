@@ -32,8 +32,8 @@ class RosBridge(object):
             self.pub_aruco_detection.publish("elapsed_time:" + str(msg.elapsed_time))  # TODO: change to ArucoDetection msg
             return
         elif topic == topics.TOPIC_DONT_DETECT_ARUCO:
-            self.pub_dont_detect_aruco.publish(True)  # todo: comment this line
-            # self.pub_dont_detect_aruco.publish(msg.boolean)  # todo: uncomment this line
+            # self.pub_dont_detect_aruco.publish(True)
+            self.pub_dont_detect_aruco.publish(msg.boolean)
             return
 
     def start(self):
@@ -58,7 +58,7 @@ class GazeboVideoSource(object):
     def analyze(self, data):
 
         img_array = np.fromstring(data.data, dtype=np.uint8).reshape((data.height, data.width, 3))
-        _, img_jpeg = cv2.imencode('.jpg', img_array.copy())  # TODO
+        _, img_jpeg = cv2.imencode('.jpg', img_array.copy())
         img_jpeg = img_jpeg.tostring()
 
         # for simulation purposes, consider the current time as the image creation time
