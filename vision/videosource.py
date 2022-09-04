@@ -88,6 +88,8 @@ class VideoSource(object):
             splitter_port=2,
             format='mjpeg',
             resize=(self.streaming_frame_width, self.streaming_frame_height),
+            # TODO: bitrate=,  # The bitrate at which video will be encoded. Defaults to 17000000 (17Mbps) if not specified. The maximum value depends on the selected H.264 level and profile. Bitrate 0 indicates the encoder should not use bitrate control (the encoder is limited by the quality only).
+            # TODO: quality=,  # For the mjpeg format, use JPEG quality values between 1 and 100 (where higher values are higher quality). Quality 0 is special and seems to be a “reasonable quality” default.
         )
 
     def stop(self):
