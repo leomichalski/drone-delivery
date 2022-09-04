@@ -12,6 +12,7 @@
 * [requirements_raspberry.txt](./requirements_raspberry.txt): arquivo com as versões das bibliotecas Python utilizadas na raspberry.
 * [requirements_gazebo.txt](./requirements_gazebo.txt): arquivo com as versões das bibliotecas Python utilizadas em conjunto com o gazebo.
 
+<!--- 
 
 #### Como rodar
 
@@ -24,9 +25,8 @@ python3 main.py --mode-raspberry
 
 # WARNING! Se estiver usando a VPN adicione a flag "--using-vpn". Por exemplo,
 python3 main.py --mode-raspberry --using-vpn
-
-
 ```
+--->
 
 #### Como instalar
 
