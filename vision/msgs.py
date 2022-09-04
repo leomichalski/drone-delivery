@@ -8,11 +8,13 @@
 
 
 class ArucoDetection(object):
-    def __init__(self, corner_list, id_list, elapsed_time, image_creation_time):
-        self.corner_list = corner_list
-        self.id_list = id_list
+    def __init__(self, marker_id, marker_center, elapsed_time, image_creation_time):
+        self.marker_id = marker_id
+        self.marker_center = marker_center
         self.elapsed_time = elapsed_time
         self.image_creation_time = image_creation_time
+
+
 
 
 class Image(object):

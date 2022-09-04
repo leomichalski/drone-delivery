@@ -39,47 +39,51 @@ class ArucoDetector(object):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         marker_corner_list, marker_id_list, rejected_candidates = cv2.aruco.detectMarkers(img, self.dictionary, parameters=self.detector_parameters)
 
-        # # check duplicate ids
-        # idsl = [pid[0] for pid in ids]
-        # if len(ids) - len(set(idsl)):
-        #     print('duplicate markers on image {}\nmarker ids: {}'.format(
-        #         image_name, sorted(idsl)), file=sys.stderr)
-
-
         # # # draw box around aruco marker within camera frame
         # # img = cv2.aruco.drawDetectedMarkers(img, marker_corner_list, marker_id_list)
+        marker_center_list = []
 
-        # # if a tag is found...
-        # if marker_id_list is not None:
-        #     # for every tag in the array of detected tags...
+        # if a tag is found...
+        if marker_id_list is None:
+            return 0, [], []
 
-        #     # flatten the ArUco IDs list
-        #     marker_id_list = marker_id_list.flatten()
-        #     # loop over the detected ArUCo corners
-        #     for (marker_corner, marker_id) in zip(marker_corner_list, marker_id_list):
+        # for every tag in the array of detected tags...
 
-        #         corner_center = marker_corner[0]
-        #         M = cv2.moments(corner_center)
-        #         cX = int(M["m10"] / M["m00"])
-        #         cY = int(M["m01"] / M["m00"])
+        # flatten the ArUco IDs list
+        marker_id_list = marker_id_list.flatten()
+        # TODO: remove duplicate ids from marker_id_list and marker_corner_list
 
-        #         # # extract the marker corners (which are always returned in
-        #         # # top-left, top-right, bottom-right, and bottom-left order)
-        #         # corners = markerCorner.reshape((4, 2))
-        #         # (topLeft, topRight, bottomRight, bottomLeft) = corners
+        # loop over the detected ArUCo corners
+        for (marker_corner, marker_id) in zip(marker_corner_list, marker_id_list):
+            # TODO: soh considerar deteccao se o marker tiver 20x20cm mesmo
 
-        #         # # convert each of the (x, y)-coordinate pairs to integers
-        #         # topRight = (int(topRight[0]), int(topRight[1]))
-        #         # bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
-        #         # bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
-        #         # topLeft = (int(topLeft[0]), int(topLeft[1]))
+            corner_center = marker_corner[0]
+            M = cv2.moments(corner_center)
+            # cX = int(M["m10"] / M["m00"])
+            # cY = int(M["m01"] / M["m00"])
+            marker_center_list.append([
+                int(M["m10"] / M["m00"]),
+                int(M["m01"] / M["m00"])
+            ])
 
-        #         # # compute and draw the center (x, y)-coordinates of the ArUco marker
-        #         # cX = int((topLeft[0] + bottomRight[0]) / 2.0)
-        #         # cY = int((topLeft[1] + bottomRight[1]) / 2.0)
+            # # extract the marker corners (which are always returned in
+            # # top-left, top-right, bottom-right, and bottom-left order)
+            # corners = markerCorner.reshape((4, 2))
+            # (topLeft, topRight, bottomRight, bottomLeft) = corners
+
+            # # convert each of the (x, y)-coordinate pairs to integers
+            # topRight = (int(topRight[0]), int(topRight[1]))
+            # bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
+            # bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
+            # topLeft = (int(topLeft[0]), int(topLeft[1]))
+
+            # # compute and draw the center (x, y)-coordinates of the ArUco marker
+            # cX = int((topLeft[0] + bottomRight[0]) / 2.0)
+            # cY = int((topLeft[1] + bottomRight[1]) / 2.0)
 
         elapsed_time = time.time() - start_time
-        return elapsed_time, marker_id_list, marker_corner_list
+        # TODO: return aruco marker direction (north, east, south, west, etc)
+        return elapsed_time, marker_id_list, marker_center_list
 
     def receive_msg(self, msg, topic):
         if topic == topics.TOPIC_DONT_DETECT_ARUCO:
@@ -88,15 +92,19 @@ class ArucoDetector(object):
         elif topic == topics.TOPIC_IMAGE_ARRAY:
             if self.dont_detect_aruco:
                 return
-            elapsed_time, marker_id_list, marker_corner_list = self.predict(msg.image.copy())
-            # TODO: a separate message for each marker id
-            prediction_msg = msgs.ArucoDetection(corner_list=marker_corner_list, id_list=marker_id_list, elapsed_time=elapsed_time, image_creation_time=msg.creation_time)
+
+            elapsed_time, marker_id_list, marker_center_list = self.predict(msg.image.copy())
+
+            # TODO: publish a separate message for each marker id
+            for id, center in zip(marker_id_list, marker_center_list):
+                prediction_msg = msgs.ArucoDetection(marker_id=id, marker_center=center, elapsed_time=elapsed_time, image_creation_time=msg.creation_time)
+                self.publish(prediction_msg, topics.TOPIC_ARUCO_DETECTION)
+
+
             print(
                 "ids:", marker_id_list,
-                "corners:", marker_corner_list, 
-                "elapsed_time:", elapsed_time, 
-                "FPS:", round(1/elapsed_time), 
+                "corners:", marker_center_list,
+                "elapsed_time:", elapsed_time,
+                # "FPS:", round(1/elapsed_time),
                 "image_creation_time:", msg.creation_time,
             )
-            self.publish(prediction_msg, topics.TOPIC_ARUCO_DETECTION)
-            return

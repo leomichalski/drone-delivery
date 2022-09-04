@@ -61,14 +61,14 @@ class VideoSource(object):
     def analyze_array(self, img_array):
         # numpy array (formato do opencv)
         self.publish(
-            msg=msgs.Image(image=img_array, creation_time=time.time()),
+            msg=msgs.Image(image=img_array, creation_time=int(time.time())),
             topic=topics.TOPIC_IMAGE_ARRAY
         )
 
     def analyze_jpeg(self, buf_value):
         # imagem binaria comprimida com JPEG
         self.publish(
-            msg=msgs.Image(image=buf_value, creation_time=time.time()),
+            msg=msgs.Image(image=buf_value, creation_time=int(time.time())),
             topic=topics.TOPIC_IMAGE_JPEG
         )
 

@@ -1,0 +1,5 @@
+roslaunch iq_sim runway.launch
+startsitl
+roslaunch iq_sim apm.launch
+python3 main.py --webstream-video --detect-aruco --using-ros --using-gazebo
+rostopic echo /aruco_detection

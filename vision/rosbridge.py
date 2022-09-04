@@ -5,6 +5,7 @@ import numpy as np
 import rospy
 from std_msgs.msg import Bool, String
 from sensor_msgs.msg import Image
+from edra_msgs.msg import ArucoDetection
 
 import topics
 import msgs
@@ -13,8 +14,7 @@ import msgs
 class RosBridge(object):
     def __init__(self):
         self.subscriber_list = []
-        self.pub_aruco_detection = rospy.Publisher('aruco_detection', String, queue_size=10)  # TODO: adjust queue size
-        self.pub_dont_detect_aruco = rospy.Publisher('dont_detect_aruco', Bool, queue_size=10)
+        self.aruco_detection_publisher = rospy.Publisher('aruco_detection', ArucoDetection, queue_size=10)
 
     def subscribe(self, subscriber):
         self.subscriber_list.append(subscriber)
@@ -28,13 +28,16 @@ class RosBridge(object):
             return
 
         if topic == topics.TOPIC_ARUCO_DETECTION:
-            # msgs.ArucoDetection(corner_list, id_list, elapsed_time, image_creation_time)
-            self.pub_aruco_detection.publish("elapsed_time:" + str(msg.elapsed_time))  # TODO: change to ArucoDetection msg
+            msg.marker_id, msg.marker_center, msg.elapsed_time, msg.image_creation_time
+            self.aruco_detection_publisher.publish(
+                marker_id=msg.marker_id,
+                marker_center=msg.marker_center,
+                elapsed_time=msg.elapsed_time,
+                image_creation_time=msg.image_creation_time,
+            )
+            # self.aruco_detection_publisher.publish("elapsed_time:" + str(msg.elapsed_time))  # TODO: change to ArucoDetection msg
             return
-        elif topic == topics.TOPIC_DONT_DETECT_ARUCO:
-            # self.pub_dont_detect_aruco.publish(True)
-            self.pub_dont_detect_aruco.publish(msg.boolean)
-            return
+        # elif topic == topics.TOPIC_DONT_DETECT_ARUCO:
 
     def start(self):
         rospy.init_node('rpi4_vision', anonymous=False, disable_signals=True)
@@ -62,7 +65,7 @@ class GazeboVideoSource(object):
         img_jpeg = img_jpeg.tostring()
 
         # for simulation purposes, consider the current time as the image creation time
-        creation_time = time.time()
+        creation_time = int(time.time())
 
         self.publish(
             msg=msgs.Image(image=img_jpeg, creation_time=creation_time),
