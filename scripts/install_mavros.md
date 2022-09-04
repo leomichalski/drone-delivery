@@ -43,3 +43,25 @@ git clone https://github.com/ros-controls/control_toolbox.git -b melodic-devel
 git clone https://github.com/ros/dynamic_reconfigure.git --branch noetic-devel
 
 git clone https://github.com/ros-controls/realtime_tools.git --branch noetic-devel
+
+
+
+
+
+
+
+
+# to make mavros work with px4, you still need to:
+
+# eigen
+git clone eigen -b 3.1
+cmake eigen (/usr/include/eigen3)
+
+make install eigen
+move signature from /usr/local/include/eigen3 to /usr/include/eigen3
+
+add FindEigen3.cmake to ??/???/?/cmake-2.86/Modules
+add FindEigen3.cmake as FindEigen.cmake to ??/???/?/cmake-2.86/Modules
+
+# oros
+cd ros_catkin_ws/src; git clone oros -b old_branch

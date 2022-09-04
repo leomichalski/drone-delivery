@@ -1,0 +1,4 @@
+#### Be sure to add yourself in the tty and dialout groups via usermod to avoid to have to execute scripts as root.
+
+pi@raspberrypi:~ $ sudo usermod -a -G tty pi
+pi@raspberrypi:~ $ sudo usermod -a -G dialout pi
