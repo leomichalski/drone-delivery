@@ -82,6 +82,16 @@ def parse_args():
         help="frame height"
     )
     ap.add_argument(
+        "-W", "--streaming-frame-width",
+        type=int, default=256,
+        help="frame width"
+    )
+    ap.add_argument(
+        "-H", "--streaming-frame-height",
+        type=int, default=144,
+        help="frame height"
+    )
+    ap.add_argument(
         "--frame-rotation",
         type=int, default=180,
         help="camera rotation"
@@ -176,6 +186,8 @@ def main(args):
         video_source = VideoSource(
             frame_width=args.frame_width,
             frame_height=args.frame_height,
+            streaming_frame_width=args.streaming_frame_width,
+            streaming_frame_height=args.streaming_frame_height,
             frames_per_second=args.frames_per_second,
             rotation=args.frame_rotation,
         )
@@ -187,8 +199,6 @@ def main(args):
         video_web_streaming = VideoWebStreaming(
             ip=ip,
             port=args.web_streaming_port,
-            frame_width=args.frame_width,
-            frame_height=args.frame_height,
         )
 
     if args.save_video:
