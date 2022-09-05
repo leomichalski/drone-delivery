@@ -4,8 +4,10 @@
   <version>0.0.0</version>
   <description>The edra_msgs package</description>
 
-  <!-- <maintainer email="edra_msgs@todo.todo"></maintainer> -->
+  <maintainer email="todo@todo.todo">iq</maintainer>
   <!-- <url type="website">http://wiki.ros.org/edra_msgs</url> -->
+
+  <license>TODO</license>
 
   <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
   <!-- <author email="john.doe@example.com">John Doe</author> -->
