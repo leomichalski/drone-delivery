@@ -1,0 +1,28 @@
+
+
+# terminal 1
+
+export PX4_HOME_LAT=28.452386
+export PX4_HOME_LON=-13.867138
+export PX4_HOME_ALT=28.5
+
+export PX4_HOME_LAT=-15.989944
+export PX4_HOME_LON=-48.044025
+export PX4_HOME_ALT=28.5
+roslaunch px4 mavros_posix_sitl.launch
+
+export PX4_HOME_LAT=52.171974
+export PX4_HOME_LON=4.417091
+export PX4_HOME_ALT=28.5
+roslaunch px4 mavros_posix_sitl.launch
+
+
+roslaunch px4 mavros_posix_sitl.launch
+
+param set NAV_RCL_ACT 0
+param set NAV_DLL_ACT 0
+
+
+
+
+
