@@ -32,6 +32,8 @@ geometry_msgs::PoseStamped waypoint_g;
 const int MODE_ARUCO_SEARCH = 1;
 const int MODE_ARUCO_LAND = 2;  // precision landing
 const int MODE_LAND = 3;
+const int MODE_START_RETURN_HOME = 4;
+const int MODE_RETURN_HOME = 5;
 int mode_g = MODE_ARUCO_SEARCH;
 
 float current_heading_g;
@@ -388,7 +390,6 @@ void aruco_detection_cb(const edra_msgs::ArucoDetection::ConstPtr& msg) {
 int main(int argc, char **argv) {
   ros::init(argc, argv, "mission_node");
   ros::NodeHandle mission_node;
-  // topic, queue_size, callback
 
   std::string ros_namespace;
   if (!mission_node.hasParam("namespace")) {
@@ -431,6 +432,11 @@ int main(int argc, char **argv) {
   nextWp.psi = 90;
   wpList.push_back(nextWp);
 
+  wait_for_connection();
+  wait_for_start();
+  initialize_local_frame();
+  takeoff(3);
+
   ros::Rate rate(2.0);
   int i = 0;
   while (ros::ok()) {
@@ -442,17 +448,25 @@ int main(int argc, char **argv) {
           set_destination(wpList[i].x, wpList[i].y, wpList[i].z, wpList[i].psi);
           i++;
         } else {
-          mode_g = MODE_RETURN_HOME;
+          mode_g = MODE_START_RETURN_HOME;
         }
       }
     } else if (mode_g == MODE_ARUCO_LAND) {
       // TODO: implement precision landing
       land();
-      ROS_INFO("Landing Started");
-    } else if (mode_g == MODE_RETURN_HOME) {
+      ROS_INFO("Aruco landing started");
+      break;
+    } else if (mode_g == MODE_START_RETURN_HOME) {
+      mode_g = MODE_RETURN_HOME;
       set_destination(wpList[0].x, wpList[0].y, wpList[0].z, wpList[0].psi);
+      ROS_INFO("Returning to home");
+    } else if (mode_g == MODE_RETURN_HOME) {
+      ros::spinOnce();
+      rate.sleep();
       if (check_waypoint_reached(0.3)) {
         land();
+        ROS_INFO("Landing started");
+        break;
       }
     }
   }
