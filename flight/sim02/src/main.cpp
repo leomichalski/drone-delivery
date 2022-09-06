@@ -23,17 +23,22 @@
 #include <string>
 #include <vector>
 
+// TODO: migrar do ardupilot para o px4
+// TODO: usar setposition GPS em vez desta simplificação (local)
+// TODO: usar "/mavros/setpoint_position/global" e "/mavros/global_position/global" em vez do "/mavros/setpoint_position/local" e "/mavros/global_position/local"
+
 mavros_msgs::State current_state_g;
 nav_msgs::Odometry current_pose_g;
 geometry_msgs::Pose correction_vector_g;
 geometry_msgs::Point local_offset_pose_g;
 geometry_msgs::PoseStamped waypoint_g;
 
-const int MODE_ARUCO_SEARCH = 1;
-const int MODE_ARUCO_LAND = 2;  // precision landing
-const int MODE_LAND = 3;
-const int MODE_START_RETURN_HOME = 4;
-const int MODE_RETURN_HOME = 5;
+const int MODE_ARUCO_SEARCH = 2;
+const int MODE_START_DELIVERY = 4;
+const int MODE_DELIVERY = 6;
+const int MODE_LAND = 8;
+const int MODE_START_RETURN_HOME = 10;
+const int MODE_RETURN_HOME = 12;
 int mode_g = MODE_ARUCO_SEARCH;
 
 float current_heading_g;
@@ -184,12 +189,16 @@ int wait_for_connection() {
 
 /* Wait for start will hold the program until the user signals the FCU to enther mode guided. This is typically done from a switch on the safety pilot’s remote or from the ground control station. */
 int wait_for_start() {
+  // TODO: ROS_INFO("Waiting for user to set mode to OFFBOARD");
   ROS_INFO("Waiting for user to set mode to GUIDED");
+  // TODO: while (ros::ok() && current_state_g.mode != "OFFBOARD") {
   while (ros::ok() && current_state_g.mode != "GUIDED") {
     ros::spinOnce();
     ros::Duration(0.01).sleep();
   }
+  // TODO: if (current_state_g.mode == "OFFBOARD") {
   if (current_state_g.mode == "GUIDED") {
+    // TODO: ROS_INFO("Mode set to OFFBOARD. Mission starting");
     ROS_INFO("Mode set to GUIDED. Mission starting");
     return 0;
   } else {
@@ -198,12 +207,17 @@ int wait_for_start() {
   }
 }
 
-
+// while (ros::ok()) {
+//     if (current_state.mode != "OFFBOARD" && (ros::Time::now() - last_request > ros::Duration(5.0))) {
+//         if (set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent) {
+//             ROS_INFO("Offboard enabled");
+//         }
+//         last_request = ros::Time::now();
+// }
 
 
 /* This function will create a local reference frame based on the starting location of the drone. This is typically done right before takeoff. This reference frame is what all of the the set destination commands will be in reference to. */
-int initialize_local_frame()
-{
+int initialize_local_frame() {
   //set the orientation of the local reference frame
   ROS_INFO("Initializing local coordinate system");
   local_offset_g = 0;
@@ -250,7 +264,7 @@ int arm() {
     arming_client.call(arm_request);
     local_pos_pub.publish(waypoint_g);
   }
-  if(arm_request.response.success) {
+  if (arm_request.response.success) {
     ROS_INFO("Arming Successful");  
     return 0;
   } else {
@@ -260,11 +274,10 @@ int arm() {
 }
 
 /** The takeoff function will arm the drone and put the drone in a hover above the initial position. */
-int takeoff(float takeoff_alt)
-{
+int takeoff(float takeoff_alt) {
   //intitialize first waypoint of mission
-  set_destination(0,0,takeoff_alt,0);
-  for(int i=0; i<100; i++) {
+  set_destination(0, 0, takeoff_alt, 0);
+  for (int i=0; i<100; i++) {
     local_pos_pub.publish(waypoint_g);
     ros::spinOnce();
     ros::Duration(0.01).sleep();
@@ -345,7 +358,7 @@ int set_mode(std::string mode)
 /* this function changes the mode of the drone to land */
 int land() {
   mavros_msgs::CommandTOL srv_land;
-  if(land_client.call(srv_land) && srv_land.response.success) {
+  if (land_client.call(srv_land) && srv_land.response.success) {
     ROS_INFO("land sent %d", srv_land.response.success);
     return 0;
   } else {
@@ -363,7 +376,7 @@ int set_speed(float speed__mps) {
   speed_cmd.request.param3 = -1; // no throttle change
   speed_cmd.request.param4 = 0; // absolute speed
   ROS_INFO("setting speed to %f", speed__mps);
-  if(command_client.call(speed_cmd)) {
+  if (command_client.call(speed_cmd)) {
     ROS_INFO("change speed command succeeded %d", speed_cmd.response.success);
     return 0;
   } else {
@@ -384,10 +397,13 @@ void aruco_detection_cb(const edra_msgs::ArucoDetection::ConstPtr& msg) {
   // ROS_INFO("Marker ID: %d, Center: (%f, %f), Elapsed time: %f, Image creation time: %" PRIu32, marker_id, center_x, center_y, elapsed_time, image_creation_time);
   // TODO: if the mav is within a 100m radius of the current gps location, then we have found the target
   // float deltaX = abs(center_x - current_pose_g.pose.pose.position.x);
-  mode_g = MODE_ARUCO_LAND;  // todo: change this to arudo land mode (precision landing)
+  if (mode_g == MODE_ARUCO_SEARCH) {
+    mode_g = MODE_START_DELIVERY;
+  }
 }
 
 int main(int argc, char **argv) {
+  geometry_msgs::Point current_position;
   ros::init(argc, argv, "mission_node");
   ros::NodeHandle mission_node;
 
@@ -401,7 +417,9 @@ int main(int argc, char **argv) {
 
   aruco_detection_sub = mission_node.subscribe((ros_namespace + "/aruco_detection").c_str(), 1, aruco_detection_cb);
   local_pos_pub = mission_node.advertise<geometry_msgs::PoseStamped>((ros_namespace + "/mavros/setpoint_position/local").c_str(), 10);
+  // global_pos_pub = mission_node.advertise<geometry_msgs::PoseStamped>((ros_namespace + "/mavros/setpoint_position/global").c_str(), 10);
   currentPos = mission_node.subscribe<nav_msgs::Odometry>((ros_namespace + "/mavros/global_position/local").c_str(), 10, pose_cb);
+  // currentPos = mission_node.subscribe<nav_msgs::Odometry>((ros_namespace + "/mavros/global_position/global").c_str(), 10, pose_cb);
   state_sub = mission_node.subscribe<mavros_msgs::State>((ros_namespace + "/mavros/state").c_str(), 10, state_cb);
   arming_client = mission_node.serviceClient<mavros_msgs::CommandBool>((ros_namespace + "/mavros/cmd/arming").c_str());
   land_client = mission_node.serviceClient<mavros_msgs::CommandTOL>((ros_namespace + "/mavros/cmd/land").c_str());
@@ -410,6 +428,7 @@ int main(int argc, char **argv) {
   command_client = mission_node.serviceClient<mavros_msgs::CommandLong>((ros_namespace + "/mavros/cmd/command").c_str());
 
   std::vector<gnc_api_waypoint> wpList;
+  // TODO: ler waypoints automaticamente a partir do xml
   gnc_api_waypoint nextWp;
   nextWp.x = 0;
   nextWp.y = 0;
@@ -451,11 +470,25 @@ int main(int argc, char **argv) {
           mode_g = MODE_START_RETURN_HOME;
         }
       }
-    } else if (mode_g == MODE_ARUCO_LAND) {
-      // TODO: implement precision landing
-      land();
-      ROS_INFO("Aruco landing started");
-      break;
+    } else if (mode_g == MODE_START_DELIVERY) {
+      // TODO: implement precision descending until 2 meters high (not landing)
+      // TODO: jeito certo de pegar a position atual do drone
+      current_position = get_current_location();
+      set_destination(current_position.x, current_position.y, 2, wpList[i].psi);
+      // land();
+      ROS_INFO("Getting down to deliver the package");
+      // break;
+      mode_g = MODE_DELIVERY;
+    } else if (mode_g == MODE_DELIVERY) {
+      ros::spinOnce();
+      rate.sleep();
+      if (check_waypoint_reached(0.3)) {
+        ROS_INFO("Delivery started");
+        // HOVER FOR SOME SECONDS, THEN RETURN HOME
+        ros::Duration(15).sleep();
+        mode_g = MODE_START_RETURN_HOME;
+      }
+
     } else if (mode_g == MODE_START_RETURN_HOME) {
       mode_g = MODE_RETURN_HOME;
       set_destination(wpList[0].x, wpList[0].y, wpList[0].z, wpList[0].psi);
