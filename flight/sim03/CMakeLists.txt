@@ -209,6 +209,9 @@ target_link_libraries(main ${catkin_LIBRARIES})
 add_executable(offb_node src/offb_node.cpp)
 target_link_libraries(offb_node ${catkin_LIBRARIES})
 
+add_executable(auto_node src/auto_node.cpp)
+target_link_libraries(auto_node ${catkin_LIBRARIES})
+
 #add_executable(sub_sol src/subscriber_sol.cpp)
 #target_link_libraries(sub_sol ${catkin_LIBRARIES})
 
