@@ -119,17 +119,17 @@ int main(int argc, char **argv) {
     rate.sleep();
   }
 
-  // geometry_msgs::PoseStamped pose;
-  // pose.pose.position.x = 0;
-  // pose.pose.position.y = 0;
-  // pose.pose.position.z = 2;
+  geometry_msgs::PoseStamped pose;
+  pose.pose.position.x = 0;
+  pose.pose.position.y = 0;
+  pose.pose.position.z = 2;
 
-  // // send a few setpoints before starting
-  // for (int i = 100; ros::ok() && i > 0; --i) {
-  //   local_pos_pub.publish(pose);
-  //   ros::spinOnce();
-  //   rate.sleep();
-  // }
+  // send a few setpoints before starting
+  for (int i = 100; ros::ok() && i > 0; --i) {
+    local_pos_pub.publish(pose);
+    ros::spinOnce();
+    rate.sleep();
+  }
 
   // SET MODE
   // ROS_INFO("Waiting offboard mode");
@@ -156,93 +156,66 @@ int main(int argc, char **argv) {
   // ROS_INFO("Offboard enabled");
 
   // ARM VEHICLE
-  // arm();
   ROS_INFO("Arming vehicle");
 
   mavros_msgs::CommandBool arm_cmd;
   arm_cmd.request.value = true;
-
-  // send_arm_cmd();
-  last_request = ros::Time::now();
-  if (!(arming_client.call(arm_cmd) && arm_cmd.response.success)) {
-    ROS_INFO("Failed to sent arming message, trying again in 20 seconds");
-  } else {
-    ROS_INFO("Sent arming message");
-  }
-
-  ROS_INFO("Waiting arm...");
-  while (ros::ok()) {
-    ROS_INFO("Waiting arm...");
-    if (current_state.armed) {
-      ROS_INFO("Vehicle armed");
-      break;
+  while (ros::ok() && !current_state.armed) {
+    if (ros::Time::now() - last_request <= ros::Duration(5.0)) {
+      continue;
     }
-    // if takes more than 20 seconds to arm,
-    if (ros::Time::now() - last_request > ros::Duration(20)) {
-      // send_arm_cmd();
-      last_request = ros::Time::now();
-      if (!(arming_client.call(arm_cmd) && arm_cmd.response.success)) {
-        ROS_INFO("Failed to sent arming message, trying again in 20 seconds");
-      } else {
-        ROS_INFO("Sent arming message");
-      }
+    if (arming_client.call(arm_cmd) && arm_cmd.response.success) {
+      ROS_INFO("Vehicle should be armed...");
     }
+    last_request = ros::Time::now();
+
+    // local_pos_pub.publish(pose);
+
     ros::spinOnce();
     rate.sleep();
   }
+  ROS_INFO("Vehicle armed");
 
 
 
   // SEND WAYPOINTS
   ROS_INFO("Waiting for waypoint service");
-  // last_request = ros::Time::now();
+  last_request = ros::Time::now();
   while (ros::ok()) {
-    // if (ros::Time::now() - last_request <= ros::Duration(5.0)) {
-    //   continue;
-    // }
+    if (ros::Time::now() - last_request <= ros::Duration(5.0)) {
+      continue;
+    }
     if (wp_client.call(wp_list)) {
       ROS_INFO("Waypoints pushed");
       break;
     }
     ROS_INFO("Waiting for waypoint service...");
-    // last_request = ros::Time::now();
+    last_request = ros::Time::now();
     // local_pos_pub.publish(pose);
     ros::spinOnce();
     rate.sleep();
   }
 
   // SET MODE
-
-  ROS_INFO("Setting mode to AUTO");
+  ROS_INFO("Waiting auto.mission mode");
+  last_request = ros::Time::now();
 
   mavros_msgs::SetMode auto_set_mode;
   auto_set_mode.request.custom_mode = "AUTO.MISSION";
 
-  // send_arm_cmd();
-  last_request = ros::Time::now();
-  if (!(set_mode_client.call(auto_set_mode) && auto_set_mode.response.mode_sent)) {
-    ROS_INFO("Failed to send 'set mode to AUTO' message, trying again in 20 seconds");
-  } else {
-    ROS_INFO("Sent 'set mode to AUTO' message");
-  }
+  while (ros::ok() && current_state.mode != "AUTO.MISSION") {
+    if (ros::Time::now() - last_request <= ros::Duration(5.0)) {
+      continue;
+    }
 
-  ROS_INFO("Waiting 'set mode to AUTO'...");
-  while (ros::ok()) {
-    ROS_INFO("Waiting 'set mode to AUTO'...");
-    if (current_state.mode == "AUTO.MISSION") {
-      ROS_INFO("Vehicle mode set to AUTO");
-      break;
+    // if (set_mode_client.call(auto_set_mode) &&
+    // auto_set_mode.response.success) {
+    if (set_mode_client.call(auto_set_mode) && auto_set_mode.response.mode_sent) {
+      ROS_INFO("Attempting to set AUTO.MISSION mode...");
     }
-    // if takes more than 20 seconds to arm,
-    if (ros::Time::now() - last_request > ros::Duration(20)) {
-      // send_arm_cmd();
-      last_request = ros::Time::now();
-      if (!(set_mode_client.call(auto_set_mode) && auto_set_mode.response.mode_sent)) {
-        ROS_INFO("Failed to send 'set mode to AUTO' message, trying again in 20 seconds");
-      } else {
-        ROS_INFO("Sent 'set mode to AUTO' message");
-      }
-    }
+    last_request = ros::Time::now();
+    // ROS_INFO("Waiting for waypoint service");
+    // local_pos_pub.publish(pose);
     ros::spinOnce();
     rate.sleep();
   }
