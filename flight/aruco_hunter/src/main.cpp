@@ -1,13 +1,3 @@
-/*
-roslaunch px4 mavros_posix_sitl.launch
-
-// simulation only params
-param set NAV_RCL_ACT 0
-param set NAV_DLL_ACT 0
-*/
-// #include <geometry_msgs/PoseStamped.h>
-// #include <mavros_msgs/Waypoint.h>
-// #include <mavros_msgs/WaypointPush.h>
 #include <edra_msgs/ArucoDetection.h>
 #include <geographic_msgs/GeoPoseStamped.h>
 #include <inttypes.h>
@@ -18,13 +8,7 @@ param set NAV_DLL_ACT 0
 #include <ros/ros.h>
 #include <sensor_msgs/NavSatFix.h>
 
-#include <list>
-
 #include "GeographicLib/Geoid.hpp"
-
-// TODO: migrar do ardupilot para o px4
-// TODO: usar setposition GPS em vez desta simplificação (local)
-// TODO: usar "/mavros/setpoint_position/global" e "/mavros/global_position/global" em vez do "/mavros/setpoint_position/local" e "/mavros/global_position/local"
 
 // state machine states
 const int MODE_ARUCO_SEARCH = 2;
@@ -42,6 +26,7 @@ const double TAKEOFF_ALTITUDE = 5.0;  // in meters
 mavros_msgs::State current_state;
 geographic_msgs::GeoPoseStamped global_position;
 bool global_position_received = false;
+// TODO: make a lib to call GeographicLib
 GeographicLib::Geoid _egm96("egm96-5");  // WARNING: not thread safe
 
 double calc_geoid_height(double lat, double lon) {

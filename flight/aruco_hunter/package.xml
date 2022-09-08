@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>sim02</name>
+  <name>aruco_hunter</name>
   <version>0.0.0</version>
-  <description>The sim02 package</description>
+  <description>The aruco_hunter package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="sim00@todo.todo">iq</maintainer>
+  <maintainer email="aruco_hunter@todo.todo">iq</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/sim00</url> -->
+  <!-- <url type="website">http://wiki.ros.org/aruco_hunter</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -49,25 +49,25 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>mavros_msgs</build_depend>
-  <build_depend>rospy</build_depend>
-  <build_depend>sensor_msgs</build_depend>
   <build_depend>mavros</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_export_depend>geometry_msgs</build_export_depend>
-  <build_export_depend>mavros_msgs</build_export_depend>
-  <build_export_depend>rospy</build_export_depend>
-  <build_export_depend>sensor_msgs</build_export_depend>
+  <build_depend>mavros_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>geographic_msgs</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>edra_msgs</build_depend>
   <build_export_depend>mavros</build_export_depend>
-  <build_export_depend>std_msgs</build_export_depend>
-  <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>mavros_msgs</exec_depend>
-  <exec_depend>rospy</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>
+  <build_export_depend>mavros_msgs</build_export_depend>
+  <build_export_depend>sensor_msgs</build_export_depend>
+  <build_export_depend>geographic_msgs</build_export_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>edra_msgs</build_export_depend>
   <exec_depend>mavros</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-
+  <exec_depend>mavros_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geographic_msgs</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>edra_msgs</exec_depend>
+  
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

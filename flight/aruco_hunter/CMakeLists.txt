@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(sim01)
+project(aruco_hunter)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -9,11 +9,12 @@ project(sim01)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   mavros
-  std_msgs
-  geometry_msgs
   mavros_msgs
-  rospy
   sensor_msgs
+  geographic_msgs
+  rospy
+  edra_msgs
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -206,10 +207,5 @@ include_directories(
 add_executable(main src/main.cpp)
 target_link_libraries(main ${catkin_LIBRARIES})
 
-#add_executable(sub_sol src/subscriber_sol.cpp)
-#target_link_libraries(sub_sol ${catkin_LIBRARIES})
-
-#add_executable(avoidance_sol src/avoidance_sol.cpp)
-#target_link_libraries(avoidance_sol ${catkin_LIBRARIES})
 
 # Add tutorial add_executable lines here 
