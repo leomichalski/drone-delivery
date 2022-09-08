@@ -9,8 +9,6 @@
 #include <sensor_msgs/NavSatFix.h>
 
 #include <cmath>
-#include <iostream>
-using namespace std;
 
 #include "GeographicLib/Geoid.hpp"
 
@@ -50,22 +48,21 @@ bool global_position_received = false;
 
 bool is_same_longitude(double lon1, double lon2) {
   // 0.00005 is a 5.5 meters precision
-  if (abs(lon1 - lon2) < 0.00005) {
+  if (std::abs(lon1 - lon2) < 0.00005) {
     return true;
   }
   return false;
 }
 bool is_same_latitude(double lat1, double lat2) {
   // 0.00005 is a 5.5 meters precision
-  if (abs(lat1 - lat2) < 0.00005) {
+  if (std::abs(lat1 - lat2) < 0.00005) {
     return true;
   }
   return false;
 }
-
 bool is_same_altitude(double alt1, double alt2) {
   // 4.0 is 4.0 meters precision
-  if (abs(alt1 - alt2) < 4.0) {
+  if (std::abs(alt1 - alt2) < 4.0) {
     return true;
   }
   return false;
@@ -163,7 +160,7 @@ int main(int argc, char **argv) {
 
   // INITIAL POSITION AND GOALS
 
-  vector<waypoint> pose_list;
+  std::vector<waypoint> pose_list;
   waypoint nextWp;
   // don't takeoff, just stay in your position
   const uint64_t POSE_LIST_IDX_INITIAL_POSITION = pose_list.size();
@@ -316,10 +313,6 @@ int main(int argc, char **argv) {
 
     ros::spinOnce();
     rate.sleep();
-    // ROS_INFO_THROTTLE(1, "UAV at: lat=%f, long=%f, alt=%f",
-    //                   global_position.pose.position.latitude,
-    //                   global_position.pose.position.longitude,
-    //                   global_position.pose.position.altitude);
     if (is_same_altitude(global_position.pose.position.altitude,
                          pose_list[pose_list_idx].altitude)) {
       ROS_INFO("UAV at takeoff altitude");
@@ -338,55 +331,15 @@ int main(int argc, char **argv) {
 
     if (is_same_coord(global_position.pose.position.longitude, global_position.pose.position.latitude, global_position.pose.position.altitude,
                       next_pose_g.pose.position.longitude, next_pose_g.pose.position.latitude, next_pose_g.pose.position.altitude)) {
-      ROS_INFO("lat1: %f, lon1: %f, lat2: %f, lon2: %f",
-                global_position.pose.position.latitude,
-                global_position.pose.position.longitude,
-                next_pose_g.pose.position.latitude,
-                next_pose_g.pose.position.longitude);
-      //  lat1, lon1, lat2, lon2, dist);
-
-      // ROS_INFO("UAV at takeoff altitude");
       pose_list_idx++;
-      // break;
-    }
-    if (pose_list_idx >= pose_list.size()) {
-      break;
+      if (pose_list_idx >= pose_list.size()) {
+        break;
+      }
+      ROS_INFO("UAV heading to lat=%f, lon=%f, alt=%f", pose_list[pose_list_idx].latitude, pose_list[pose_list_idx].longitude, pose_list[pose_list_idx].altitude);
     }
     ros::spinOnce();
     rate.sleep();
   }
-
-    // // uint64_t pose_list_idx = 0;
-    // while (ros::ok()) {
-    //   if (mode_g == MODE_ARUCO_SEARCH) {
-    //     set_destination(pose_list[pose_list_idx]);
-    //     // pose_list[pose_list_idx].header.stamp = ros::Time::now();
-    //     // global_pos_pub.publish(pose_list[pose_list_idx]);
-    //     // set_destination(pose_list[pose_list_idx]);
-    //     if (pose_list_idx < pose_list.size() &&
-    //         is_same_coord(global_position.pose.position.latitude,
-    //                       global_position.pose.position.longitude,
-    //                       pose_list[pose_list_idx].pose.position.latitude,
-    //                       pose_list[pose_list_idx].pose.position.longitude)) {
-    //       ROS_INFO("Arrived at waypoint %lu", pose_list_idx);
-    //       pose_list_idx++;
-    //       ROS_INFO("Destination: lat=%f, long=%f, alt=%f",
-    //                pose.pose.position.latitude, pose.pose.position.longitude,
-    //                pose.pose.position.altitude);
-    //     }
-    //     ros::spinOnce();
-    //     rate.sleep();
-    //   }
-    // }
-
-    // is_same_coord
-
-    // int i = 0;
-    // while (ros::ok()) {
-    //   i++;
-    //   ros::spinOnce();
-    //   rate.sleep();
-    // }
 
     //   ros::Rate rate(2.0);
     //   int i = 0;
