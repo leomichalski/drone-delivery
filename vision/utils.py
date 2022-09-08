@@ -17,7 +17,7 @@ def get_rpi_ip():
     return check_output(cmd, shell=True).decode('utf-8').rstrip()
 
 def get_rpi_vpn_ip():
-    cmd = "hostname -I | awk '{print \"\"$2\"\"}'"
+    cmd = "ifconfig tun0 | grep "inet " | awk '{print ""$2""}'"
     return check_output(cmd, shell=True).decode('utf-8').rstrip()
 
 

@@ -39,7 +39,7 @@ class RosBridge(object):
         # elif topic == topics.TOPIC_DONT_DETECT_ARUCO:
 
     def start(self):
-        rospy.init_node('rpi4_vision', anonymous=False, disable_signals=True)
+        rospy.init_node('rpi_vision', anonymous=False, disable_signals=True)
 
     def stop(self):
         rospy.signal_shutdown("CLOSING ROS BRIDGE PROPERLY")

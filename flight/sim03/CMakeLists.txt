@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(sim00)
+project(sim03)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -205,6 +205,12 @@ include_directories(
 
 add_executable(main src/main.cpp)
 target_link_libraries(main ${catkin_LIBRARIES})
+
+add_executable(offb_node src/offb_node.cpp)
+target_link_libraries(offb_node ${catkin_LIBRARIES})
+
+add_executable(auto_node src/auto_node.cpp)
+target_link_libraries(auto_node ${catkin_LIBRARIES})
 
 #add_executable(sub_sol src/subscriber_sol.cpp)
 #target_link_libraries(sub_sol ${catkin_LIBRARIES})
