@@ -170,136 +170,10 @@ void set_destination(float x, float y, float z, float psi) {
   
 }
 
-/* Wait for connect is a function that will hold the program until communication with the FCU is established. */
-int wait_for_connection() {
-  ROS_INFO("Waiting for FCU connection");
-  // wait for FCU connection
-  while (ros::ok() && !current_state_g.connected) {
-    ros::spinOnce();
-    ros::Duration(0.01).sleep();
-  }
-  if (current_state_g.connected) {
-    ROS_INFO("Connected to FCU");
-    return 0;
-  } else {
-    ROS_INFO("Error connecting to drone");
-    return -1;
-  }
-}
-
-/* Wait for start will hold the program until the user signals the FCU to enther mode guided. This is typically done from a switch on the safety pilot’s remote or from the ground control station. */
-int wait_for_start() {
-  // TODO: ROS_INFO("Waiting for user to set mode to OFFBOARD");
-  ROS_INFO("Waiting for user to set mode to GUIDED");
-  // TODO: while (ros::ok() && current_state_g.mode != "OFFBOARD") {
-  while (ros::ok() && current_state_g.mode != "GUIDED") {
-    ros::spinOnce();
-    ros::Duration(0.01).sleep();
-  }
-  // TODO: if (current_state_g.mode == "OFFBOARD") {
-  if (current_state_g.mode == "GUIDED") {
-    // TODO: ROS_INFO("Mode set to OFFBOARD. Mission starting");
-    ROS_INFO("Mode set to GUIDED. Mission starting");
-    return 0;
-  } else {
-    ROS_INFO("Error starting mission!!");
-    return -1;
-  }
-}
-
-// while (ros::ok()) {
-//     if (current_state.mode != "OFFBOARD" && (ros::Time::now() - last_request > ros::Duration(5.0))) {
-//         if (set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent) {
-//             ROS_INFO("Offboard enabled");
-//         }
-//         last_request = ros::Time::now();
-// }
-
-
-/* This function will create a local reference frame based on the starting location of the drone. This is typically done right before takeoff. This reference frame is what all of the the set destination commands will be in reference to. */
-int initialize_local_frame() {
-  //set the orientation of the local reference frame
-  ROS_INFO("Initializing local coordinate system");
-  local_offset_g = 0;
-  for (int i = 1; i <= 30; i++) {
-    ros::spinOnce();
-    ros::Duration(0.1).sleep();
-
-    float q0 = current_pose_g.pose.pose.orientation.w;
-    float q1 = current_pose_g.pose.pose.orientation.x;
-    float q2 = current_pose_g.pose.pose.orientation.y;
-    float q3 = current_pose_g.pose.pose.orientation.z;
-    float psi = atan2((2*(q0*q3 + q1*q2)), (1 - 2*(pow(q2,2) + pow(q3,2))) ); // yaw
-
-    local_offset_g += psi*(180/M_PI);
-
-    local_offset_pose_g.x = local_offset_pose_g.x + current_pose_g.pose.pose.position.x;
-    local_offset_pose_g.y = local_offset_pose_g.y + current_pose_g.pose.pose.position.y;
-    local_offset_pose_g.z = local_offset_pose_g.z + current_pose_g.pose.pose.position.z;
-    // ROS_INFO("current heading%d: %f", i, local_offset_g/i);
-  }
-  local_offset_pose_g.x = local_offset_pose_g.x/30;
-  local_offset_pose_g.y = local_offset_pose_g.y/30;
-  local_offset_pose_g.z = local_offset_pose_g.z/30;
-  local_offset_g /= 30;
-  ROS_INFO("Coordinate offset set");
-  ROS_INFO("the X' axis is facing: %f", local_offset_g);
-  return 0;
-}
-
-int arm() {
-  //intitialize first waypoint of mission
-  set_destination(0,0,0,0);
-  for(int i=0; i<100; i++) {
-    local_pos_pub.publish(waypoint_g);
-    ros::spinOnce();
-    ros::Duration(0.01).sleep();
-  }
-  // arming
-  ROS_INFO("Arming drone");
-  mavros_msgs::CommandBool arm_request;
-  arm_request.request.value = true;
-  while (!current_state_g.armed && !arm_request.response.success && ros::ok()) {
-    ros::Duration(.1).sleep();
-    arming_client.call(arm_request);
-    local_pos_pub.publish(waypoint_g);
-  }
-  if (arm_request.response.success) {
-    ROS_INFO("Arming Successful");  
-    return 0;
-  } else {
-    ROS_INFO("Arming failed with %d", arm_request.response.success);
-    return -1;  
-  }
-}
 
 /** The takeoff function will arm the drone and put the drone in a hover above the initial position. */
 int takeoff(float takeoff_alt) {
-  //intitialize first waypoint of mission
-  set_destination(0, 0, takeoff_alt, 0);
-  for (int i=0; i<100; i++) {
-    local_pos_pub.publish(waypoint_g);
-    ros::spinOnce();
-    ros::Duration(0.01).sleep();
-  }
-  // arming
-  ROS_INFO("Arming drone");
-  mavros_msgs::CommandBool arm_request;
-  arm_request.request.value = true;
-  while (!current_state_g.armed && !arm_request.response.success && ros::ok()) {
-    ros::Duration(.1).sleep();
-    arming_client.call(arm_request);
-    local_pos_pub.publish(waypoint_g);
-  }
-  if (arm_request.response.success) {
-    ROS_INFO("Arming Successful");  
-  } else {
-    ROS_INFO("Arming failed with %d", arm_request.response.success);
-    return -1;  
-  }
-
   //request takeoff
-  
   mavros_msgs::CommandTOL srv_takeoff;
   srv_takeoff.request.altitude = takeoff_alt;
   if (takeoff_client.call(srv_takeoff)) {
@@ -312,6 +186,7 @@ int takeoff(float takeoff_alt) {
   sleep(2);
   return 0; 
 }
+
 /* This function returns an int of 1 or 0. THis function can be used to check when to request the next waypoint in the mission. */
 int check_waypoint_reached(float pos_tolerance=0.3, float heading_tolerance=0.01) {
   local_pos_pub.publish(waypoint_g);
@@ -451,9 +326,116 @@ int main(int argc, char **argv) {
   nextWp.psi = 90;
   wpList.push_back(nextWp);
 
+
+
+/* Wait for connect is a function that will hold the program until communication with the FCU is established. */
+int wait_for_connection() {
+  ROS_INFO("Waiting for FCU connection");
+  // wait for FCU connection
+  while (ros::ok() && !current_state_g.connected) {
+    ros::spinOnce();
+    ros::Duration(0.01).sleep();
+  }
+  if (current_state_g.connected) {
+    ROS_INFO("Connected to FCU");
+    return 0;
+  } else {
+    ROS_INFO("Error connecting to drone");
+    return -1;
+  }
+}
+
+/* Wait for start will hold the program until the user signals the FCU to enther mode guided. This is typically done from a switch on the safety pilot’s remote or from the ground control station. */
+int wait_for_start() {
+  // TODO: ROS_INFO("Waiting for user to set mode to OFFBOARD");
+  ROS_INFO("Waiting for user to set mode to GUIDED");
+  // TODO: while (ros::ok() && current_state_g.mode != "OFFBOARD") {
+  while (ros::ok() && current_state_g.mode != "GUIDED") {
+    ros::spinOnce();
+    ros::Duration(0.01).sleep();
+  }
+  // TODO: if (current_state_g.mode == "OFFBOARD") {
+  if (current_state_g.mode == "GUIDED") {
+    // TODO: ROS_INFO("Mode set to OFFBOARD. Mission starting");
+    ROS_INFO("Mode set to GUIDED. Mission starting");
+    return 0;
+  } else {
+    ROS_INFO("Error starting mission!!");
+    return -1;
+  }
+}
+
+// while (ros::ok()) {
+//     if (current_state.mode != "OFFBOARD" && (ros::Time::now() - last_request > ros::Duration(5.0))) {
+//         if (set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent) {
+//             ROS_INFO("Offboard enabled");
+//         }
+//         last_request = ros::Time::now();
+// }
+
+
+/* This function will create a local reference frame based on the starting location of the drone. This is typically done right before takeoff. This reference frame is what all of the the set destination commands will be in reference to. */
+// int initialize_local_frame() {
+  //set the orientation of the local reference frame
+  ROS_INFO("Initializing local coordinate system");
+  local_offset_g = 0;
+  for (int i = 1; i <= 30; i++) {
+    ros::spinOnce();
+    ros::Duration(0.1).sleep();
+
+    float q0 = current_pose_g.pose.pose.orientation.w;
+    float q1 = current_pose_g.pose.pose.orientation.x;
+    float q2 = current_pose_g.pose.pose.orientation.y;
+    float q3 = current_pose_g.pose.pose.orientation.z;
+    float psi = atan2((2*(q0*q3 + q1*q2)), (1 - 2*(pow(q2,2) + pow(q3,2))) ); // yaw
+
+    local_offset_g += psi*(180/M_PI);
+
+    local_offset_pose_g.x = local_offset_pose_g.x + current_pose_g.pose.pose.position.x;
+    local_offset_pose_g.y = local_offset_pose_g.y + current_pose_g.pose.pose.position.y;
+    local_offset_pose_g.z = local_offset_pose_g.z + current_pose_g.pose.pose.position.z;
+    // ROS_INFO("current heading%d: %f", i, local_offset_g/i);
+  }
+  local_offset_pose_g.x = local_offset_pose_g.x/30;
+  local_offset_pose_g.y = local_offset_pose_g.y/30;
+  local_offset_pose_g.z = local_offset_pose_g.z/30;
+  local_offset_g /= 30;
+  ROS_INFO("Coordinate offset set");
+  ROS_INFO("the X' axis is facing: %f", local_offset_g);
+  // return 0;
+// }
+
+// int arm() {
+  //intitialize first waypoint of mission
+  set_destination(0,0,0,0);
+  for(int i=0; i<100; i++) {
+    local_pos_pub.publish(waypoint_g);
+    ros::spinOnce();
+    ros::Duration(0.01).sleep();
+  }
+  // arming
+  ROS_INFO("Arming drone");
+  mavros_msgs::CommandBool arm_request;
+  arm_request.request.value = true;
+  while (!current_state_g.armed && !arm_request.response.success && ros::ok()) {
+    ros::Duration(.1).sleep();
+    arming_client.call(arm_request);
+    local_pos_pub.publish(waypoint_g);
+  }
+  if (arm_request.response.success) {
+    ROS_INFO("Arming Successful");  
+    // return 0;
+  } else {
+    ROS_INFO("Arming failed with %d", arm_request.response.success);
+    return -1;  
+  }
+// }
+
+
   wait_for_connection();
   wait_for_start();
   initialize_local_frame();
+  arm();
   takeoff(3);
 
   ros::Rate rate(2.0);
