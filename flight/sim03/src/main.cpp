@@ -5,23 +5,28 @@ roslaunch px4 mavros_posix_sitl.launch
 param set NAV_RCL_ACT 0
 param set NAV_DLL_ACT 0
 */
+// #include <geometry_msgs/PoseStamped.h>
+// #include <mavros_msgs/Waypoint.h>
+// #include <mavros_msgs/WaypointPush.h>
 #include <edra_msgs/ArucoDetection.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <geographic_msgs/GeoPoseStamped.h>
 #include <inttypes.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/CommandCode.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
-#include <mavros_msgs/Waypoint.h>
-#include <mavros_msgs/WaypointPush.h>
 #include <ros/ros.h>
+#include <sensor_msgs/NavSatFix.h>
 
 #include <list>
+
+#include "GeographicLib/Geoid.hpp"
 
 // TODO: migrar do ardupilot para o px4
 // TODO: usar setposition GPS em vez desta simplificação (local)
 // TODO: usar "/mavros/setpoint_position/global" e "/mavros/global_position/global" em vez do "/mavros/setpoint_position/local" e "/mavros/global_position/local"
 
+// state machine states
 const int MODE_ARUCO_SEARCH = 2;
 const int MODE_START_DELIVERY = 4;
 const int MODE_DELIVERY = 6;
@@ -29,6 +34,37 @@ const int MODE_LAND = 8;
 const int MODE_START_RETURN_HOME = 10;
 const int MODE_RETURN_HOME = 12;
 int mode_g = MODE_ARUCO_SEARCH;
+
+// global variables related to the waypoints
+const double TAKEOFF_ALTITUDE = 5.0;  // in meters
+
+// other stuff
+mavros_msgs::State current_state;
+geographic_msgs::GeoPoseStamped global_position;
+bool global_position_received = false;
+GeographicLib::Geoid _egm96("egm96-5");  // WARNING: not thread safe
+
+double calc_geoid_height(double lat, double lon) {
+    return _egm96(lat, lon);
+}
+double amsl_to_ellipsoid_height(double lat, double lon, double amsl) {
+  return amsl + GeographicLib::Geoid::GEOIDTOELLIPSOID * calc_geoid_height(lat, lon);
+}
+double ellipsoid_height_to_amsl(double lat, double lon, double ellipsoid_height) {
+  return ellipsoid_height + GeographicLib::Geoid::ELLIPSOIDTOGEOID * calc_geoid_height(lat, lon);
+}
+
+void global_position_cb(const sensor_msgs::NavSatFix::ConstPtr& msg) {
+    global_position.header.stamp = msg->header.stamp;
+    global_position.pose.position.latitude = msg->latitude;
+    global_position.pose.position.longitude = msg->longitude;
+    global_position.pose.position.altitude = ellipsoid_height_to_amsl(msg->latitude, msg->longitude, msg->altitude);
+    global_position_received = true;
+}
+
+void state_cb(const mavros_msgs::State::ConstPtr& msg){
+    current_state = *msg;
+}
 
 void aruco_detection_cb(const edra_msgs::ArucoDetection::ConstPtr& msg) {
   int32_t marker_id = msg->marker_id;
@@ -44,11 +80,6 @@ void aruco_detection_cb(const edra_msgs::ArucoDetection::ConstPtr& msg) {
   }
 }
 
-mavros_msgs::State current_state;
-void state_cb(const mavros_msgs::State::ConstPtr& msg){
-    current_state = *msg;
-}
-
 int main(int argc, char **argv) {
 
 
@@ -56,104 +87,120 @@ int main(int argc, char **argv) {
   ros::NodeHandle nh;
 
   ros::Subscriber aruco_detection_sub = nh.subscribe<edra_msgs::ArucoDetection>("/aruco_detection", 1, aruco_detection_cb);
-  ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
-  ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
+
   ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
   ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
-  ros::ServiceClient wp_client = nh.serviceClient<mavros_msgs::WaypointPush>("mavros/mission/push");
-  mavros_msgs::WaypointPush wp_list;
-  mavros_msgs::Waypoint wp;
+  ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
+  ros::Publisher global_pos_pub = nh.advertise<geographic_msgs::GeoPoseStamped>("mavros/setpoint_position/global", 10);
+  ros::Subscriber global_pos_sub = nh.subscribe<sensor_msgs::NavSatFix>("mavros/global_position/global", 1, global_position_cb);
 
   // the setpoint publishing rate MUST be faster than 2Hz
-  ros::Rate rate(20.0);
+  ros::Rate rate(10.0);
+  // ros::Rate rate(20.0);
   ros::Time last_request;
+  uint16_t retry_counter;
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////
-  // WP 0
-  wp.frame = mavros_msgs::Waypoint::FRAME_GLOBAL_REL_ALT;
-  wp.command = mavros_msgs::CommandCode::NAV_TAKEOFF;
-  wp.is_current = true;
-  wp.autocontinue = true;
-  wp.x_lat = 52.171974;
-  wp.y_long = 4.417091;
-  wp.z_alt = 10;
-  wp_list.request.waypoints.push_back(wp);
-  // WP 1
-  wp.frame = mavros_msgs::Waypoint::FRAME_GLOBAL_REL_ALT;
-  wp.command = mavros_msgs::CommandCode::NAV_LOITER_TIME;
-  wp.is_current = false;
-  wp.autocontinue = true;
-  wp.x_lat = 52.1704061;
-  wp.y_long = 4.4198957;
-  wp.z_alt = 20;
-  wp.param1 = 10;  // time to loiter at waypoint (seconds - decimal
-  wp.param3 = 2;  // Radius around waypoint, in meters. Specify as a positive value to loiter clockwise, negative to move counter-clockwise.
-  wp.param4 = 1;  // Desired yaw angle.
-  wp_list.request.waypoints.push_back(wp);
-
-  // WP 2
-  wp.frame = mavros_msgs::Waypoint::FRAME_GLOBAL_REL_ALT;
-  wp.command = mavros_msgs::CommandCode::NAV_WAYPOINT;
-  wp.is_current = false;
-  wp.autocontinue = true;
-  wp.x_lat = 52.1719317;
-  wp.y_long = 4.4210099;
-  wp.z_alt = 20;
-  wp_list.request.waypoints.push_back(wp);
-
-  // WP 3
-  wp.frame = mavros_msgs::Waypoint::FRAME_MISSION;
-  wp.command = mavros_msgs::CommandCode::NAV_RETURN_TO_LAUNCH;
-  wp.is_current = false;
-  wp.autocontinue = true;
-  wp.x_lat = 0;
-  wp.y_long = 0;
-  wp.z_alt = 0;
-  wp_list.request.waypoints.push_back(wp);
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  // wait for FCU connection
+  // WAIT FOR FCU CONNECTION
+  ROS_INFO("Waiting for FCU connection...");
   while (ros::ok() && !current_state.connected) {
     ros::spinOnce();
     rate.sleep();
   }
+  ROS_INFO("FCU connected");
 
-  // geometry_msgs::PoseStamped pose;
-  // pose.pose.position.x = 0;
-  // pose.pose.position.y = 0;
-  // pose.pose.position.z = 2;
+  // WAIT FOR GPS INFORMATION
+  ROS_INFO("Waiting for GPS signal...");
+  while (ros::ok() && !global_position_received) {
+    ros::spinOnce();
+    rate.sleep();
+  }
+  ROS_INFO("Got global position: lat=%f, long=%f, alt=%f", global_position.pose.position.latitude, global_position.pose.position.longitude, global_position.pose.position.altitude);
 
-  // // send a few setpoints before starting
-  // for (int i = 100; ros::ok() && i > 0; --i) {
-  //   local_pos_pub.publish(pose);
-  //   ros::spinOnce();
-  //   rate.sleep();
-  // }
+  // INITIAL POSITION AND GOALS
+
+  std::vector<geographic_msgs::GeoPoseStamped> pose_list;
+  geographic_msgs::GeoPoseStamped pose;
+  // don't takeoff, just stay in your position
+  const uint64_t POSE_LIST_IDX_INITIAL_POSITION = pose_list.size();
+  pose.pose.position.latitude = global_position.pose.position.latitude;
+  pose.pose.position.longitude = global_position.pose.position.longitude;
+  pose.pose.position.altitude = global_position.pose.position.altitude;
+  pose_list.push_back(pose);
+  // takeoff
+  // TODO: calculate if the drone is already in the air before taking off (get the current place (netherlands, FGA) altitude from lat and long, then check if it's higher than the current MAV altitude)
+  const uint64_t POSE_LIST_IDX_TAKEOFF = pose_list.size();
+  pose.pose.position.latitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].pose.position.latitude;
+  pose.pose.position.longitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].pose.position.longitude;
+  pose.pose.position.altitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].pose.position.altitude + TAKEOFF_ALTITUDE;
+  pose_list.push_back(pose);
+  // // just another goal
+  // pose.pose.position.latitude = ;
+  // pose.pose.position.longitude = ;
+  // pose_list.push_back(pose);
+  // // just another goal
+  // pose.pose.position.latitude = ;
+  // pose.pose.position.longitude = ;
+  // pose_list.push_back(pose);
+  // return to launch
+  const uint64_t POSE_LIST_IDX_RETURNING_TO_LAUNCH = pose_list.size();
+  pose.pose.position.latitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].pose.position.latitude;
+  pose.pose.position.longitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].pose.position.longitude;
+  pose.pose.position.altitude = pose_list[POSE_LIST_IDX_TAKEOFF].pose.position.altitude;
+  pose_list.push_back(pose);
+  // land
+  const uint64_t POSE_LIST_IDX_LAND = pose_list.size();
+  pose.pose.position.latitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].pose.position.latitude;
+  pose.pose.position.longitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].pose.position.longitude;
+  pose.pose.position.altitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].pose.position.altitude;
+  pose_list.push_back(pose);
+
+  // // WP 1
+  // wp.frame = mavros_msgs::Waypoint::FRAME_GLOBAL_REL_ALT;
+  // wp.command = mavros_msgs::CommandCode::NAV_LOITER_TIME;
+  // // WP 3
+  // wp.frame = mavros_msgs::Waypoint::FRAME_MISSION;
+  // wp.command = mavros_msgs::CommandCode::NAV_RETURN_TO_LAUNCH;
+
+  // send a few setpoints before starting
+  for (int i = 0; ros::ok() && i < 20; ++i) {
+    pose.header.stamp = ros::Time::now();
+    global_pos_pub.publish(pose_list[POSE_LIST_IDX_INITIAL_POSITION]);
+    ros::spinOnce();
+    rate.sleep();
+  }
 
   // SET MODE
-  // ROS_INFO("Waiting offboard mode");
-  // last_request = ros::Time::now();
+  // set_mode()
+  ROS_INFO("Waiting offboard mode");
 
-  // mavros_msgs::SetMode offb_set_mode;
-  // offb_set_mode.request.custom_mode = "OFFBOARD";
+  mavros_msgs::SetMode offb_set_mode;
+  offb_set_mode.request.base_mode = 0;
+  offb_set_mode.request.custom_mode = "OFFBOARD";
 
-  // while (ros::ok() && current_state.mode != "OFFBOARD") {
-  //   if (ros::Time::now() - last_request <= ros::Duration(5.0)) {
-  //     continue;
-  //   }
-  //   if (set_mode_client.call(offb_set_mode) &&
-  //       offb_set_mode.response.mode_sent) {
-  //     ROS_INFO("Offboard should be enabled...");
-  //   }
-  //   last_request = ros::Time::now();
+  retry_counter = 0;
+  while (ros::ok()) {
+    if (current_state.mode == "OFFBOARD") {
+      ROS_INFO("Vehicle mode set to OFFBOARD");
+      break;
+    }
+    ROS_INFO("Waiting 'set mode to OFFBOARD'...");
+    // if takes more than 5 seconds to arm,
+    if ((retry_counter == 0) || (ros::Time::now() - last_request > ros::Duration(5))) {
+      retry_counter++;
+      if (set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent) {
+        ROS_INFO("Sent 'set mode to OFFBOARD' message");
+      } else {
+        ROS_INFO("Failed to send 'set mode to OFFBOARD' message, trying again in 5 seconds");
+      }
+      last_request = ros::Time::now();
+    }
+    global_pos_pub.publish(pose_list[POSE_LIST_IDX_INITIAL_POSITION]);
+    ros::spinOnce();
+    rate.sleep();
+  }
+  ROS_INFO("OFFBOARD enabled");
 
-  //   local_pos_pub.publish(pose);
 
-  //   ros::spinOnce();
-  //   rate.sleep();
-  // }
-  // ROS_INFO("Offboard enabled");
 
   // ARM VEHICLE
   // arm();
@@ -162,98 +209,50 @@ int main(int argc, char **argv) {
   mavros_msgs::CommandBool arm_cmd;
   arm_cmd.request.value = true;
 
-  // send_arm_cmd();
-  last_request = ros::Time::now();
-  if (!(arming_client.call(arm_cmd) && arm_cmd.response.success)) {
-    ROS_INFO("Failed to sent arming message, trying again in 20 seconds");
-  } else {
-    ROS_INFO("Sent arming message");
-  }
-
-  ROS_INFO("Waiting arm...");
+  retry_counter = 0;
   while (ros::ok()) {
-    ROS_INFO("Waiting arm...");
     if (current_state.armed) {
       ROS_INFO("Vehicle armed");
       break;
     }
-    // if takes more than 20 seconds to arm,
-    if (ros::Time::now() - last_request > ros::Duration(20)) {
-      // send_arm_cmd();
-      last_request = ros::Time::now();
-      if (!(arming_client.call(arm_cmd) && arm_cmd.response.success)) {
-        ROS_INFO("Failed to sent arming message, trying again in 20 seconds");
-      } else {
+    ROS_INFO("Waiting arm...");
+    // if takes more than 5 seconds to arm,
+    if ((retry_counter == 0) || (ros::Time::now() - last_request > ros::Duration(5))) {
+      retry_counter++;
+      if (arming_client.call(arm_cmd) && arm_cmd.response.success) {
         ROS_INFO("Sent arming message");
-      }
-    }
-    ros::spinOnce();
-    rate.sleep();
-  }
-
-
-
-  // SEND WAYPOINTS
-  ROS_INFO("Waiting for waypoint service");
-  // last_request = ros::Time::now();
-  while (ros::ok()) {
-    // if (ros::Time::now() - last_request <= ros::Duration(5.0)) {
-    //   continue;
-    // }
-    if (wp_client.call(wp_list)) {
-      ROS_INFO("Waypoints pushed");
-      break;
-    }
-    ROS_INFO("Waiting for waypoint service...");
-    // last_request = ros::Time::now();
-    // local_pos_pub.publish(pose);
-    ros::spinOnce();
-    rate.sleep();
-  }
-
-  // SET MODE
-
-  ROS_INFO("Setting mode to AUTO");
-
-  mavros_msgs::SetMode auto_set_mode;
-  auto_set_mode.request.custom_mode = "AUTO.MISSION";
-
-  // send_arm_cmd();
-  last_request = ros::Time::now();
-  if (!(set_mode_client.call(auto_set_mode) && auto_set_mode.response.mode_sent)) {
-    ROS_INFO("Failed to send 'set mode to AUTO' message, trying again in 20 seconds");
-  } else {
-    ROS_INFO("Sent 'set mode to AUTO' message");
-  }
-
-  ROS_INFO("Waiting 'set mode to AUTO'...");
-  while (ros::ok()) {
-    ROS_INFO("Waiting 'set mode to AUTO'...");
-    if (current_state.mode == "AUTO.MISSION") {
-      ROS_INFO("Vehicle mode set to AUTO");
-      break;
-    }
-    // if takes more than 20 seconds to arm,
-    if (ros::Time::now() - last_request > ros::Duration(20)) {
-      // send_arm_cmd();
-      last_request = ros::Time::now();
-      if (!(set_mode_client.call(auto_set_mode) && auto_set_mode.response.mode_sent)) {
-        ROS_INFO("Failed to send 'set mode to AUTO' message, trying again in 20 seconds");
       } else {
-        ROS_INFO("Sent 'set mode to AUTO' message");
+        ROS_INFO("Failed to sent arming message, trying again in 5 seconds");
       }
+      last_request = ros::Time::now();
     }
+    global_pos_pub.publish(pose_list[POSE_LIST_IDX_INITIAL_POSITION]);
     ros::spinOnce();
     rate.sleep();
   }
-  ROS_INFO("AUTO.MISSION enabled");
 
-  int i = 0;
+  // TODO: better takeoff logic
+  // uint64_t pose_list_idx = 0;
+  ROS_INFO("Taking off to: lat=%f, long=%f, alt=%f",
+           pose_list[POSE_LIST_IDX_TAKEOFF].pose.position.latitude,
+           pose_list[POSE_LIST_IDX_TAKEOFF].pose.position.longitude,
+           pose_list[POSE_LIST_IDX_TAKEOFF].pose.position.altitude);
   while (ros::ok()) {
-    i++;
+    pose_list[POSE_LIST_IDX_TAKEOFF].header.stamp = ros::Time::now();
+    global_pos_pub.publish(pose_list[POSE_LIST_IDX_TAKEOFF]);
     ros::spinOnce();
-    rate.sleep();
-  }
+    ROS_INFO_THROTTLE(1, "UAV at: lat=%f, long=%f, alt=%f",
+                      global_position.pose.position.latitude,
+                      global_position.pose.position.longitude,
+                      global_position.pose.position.altitude);
+    }
+
+  // int i = 0;
+  // while (ros::ok()) {
+  //   i++;
+  //   ros::spinOnce();
+  //   rate.sleep();
+  // }
 
 //   ros::Rate rate(2.0);
 //   int i = 0;
@@ -305,4 +304,3 @@ int main(int argc, char **argv) {
 
   return 0;
 }
-
