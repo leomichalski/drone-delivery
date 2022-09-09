@@ -38,9 +38,6 @@ rosrun aruco_hunter main
 ###### terminal 4 (optional)
 
 ```
-# activate your python virtual environment
-source /path/to/environment
-
 # change the current working directory
 cd drone-delivery/vision
 
