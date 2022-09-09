@@ -28,6 +28,28 @@ param set COM_RCL_EXCEPT 4
 ./QGroundControl.AppImage
 ```
 
+###### terminal 3
+
+```
+# run the guidance, navigation and control code
+rosrun aruco_hunter main
+```
+
+###### terminal 4 (optional)
+
+```
+# activate your python virtual environment
+source /path/to/environment
+
+# change the current working directory
+cd drone-delivery/vision
+
+# run the computer vision related code
+python3 main.py --using-ros --using-gazebo --webstream-video --detect-aruco
+
+# for more info on how to run the computer vision code, run
+python3 main.py --help
+```
 
 ### Useful coords
 Tip: calculate altitude from (latitude, longitude) using https://www.maps.ie/coordinates.html
