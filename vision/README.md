@@ -3,30 +3,15 @@
 * [main.py](./main.py): arquivo que roda o programa e faz tudo funcionar em conjunto.
 
 * [videosource.py](./videosource.py): pega as imagens da câmera.
-* [videowebstreaming.py](./videowebstreaming.py): transmite as imagens da câmera.
+* [videosaver.py](./videosaver.py): salva as imagens em formato de vídeo.
+* [videowebstreaming.py](./videowebstreaming.py): transmite as imagens via HTTP.
 * [arucodetector.py](./arucodetector.py): arquivo que encapsula o detector de marcadores aruco.
 * [topics.py](./topics.py): tópicos da arquitetura "Publish/Subscribe".
 * [msgs.py](./msgs.py): mensagens da arquitetura "Publish/Subscribe".
-* [utils.py](./utils.py): métodos aleatórios que ajudam em algo (tipo um "miscellaneous").
+* [utils.py](./utils.py): métodos aleatórios que ajudam em algo.
 * [rosbridge.py](./rosbridge.py): ponte para fazer o código em Python na arquitetura "Publish/Subscribe" funcionar com o código em ROS (que está em outra arquitetura "Publish/Subscribe").
 * [requirements_raspberry.txt](./requirements_raspberry.txt): arquivo com as versões das bibliotecas Python utilizadas na raspberry.
 * [requirements_gazebo.txt](./requirements_gazebo.txt): arquivo com as versões das bibliotecas Python utilizadas em conjunto com o gazebo.
-
-<!--- 
-
-#### Como rodar
-
-```
-# no computador com gazebo
-python3 main.py --mode-gazebo
-
-# na raspberry
-python3 main.py --mode-raspberry
-
-# WARNING! Se estiver usando a VPN adicione a flag "--using-vpn". Por exemplo,
-python3 main.py --mode-raspberry --using-vpn
-```
---->
 
 #### Como instalar
 
