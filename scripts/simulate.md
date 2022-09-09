@@ -1,5 +1,5 @@
 ### Setup
-Right now, I'm out of time to write better setup instructions, but I'm using Ubuntu 20.04, ROS Noetic, Gazebo 11, MAVROS [2.2.0](https://github.com/mavlink/mavros/tree/2.2.0), PX4-Autopilot [1.13.0](https://github.com/PX4/PX4-Autopilot/tree/v1.13.0) and the latest [PX4-SITL_gazebo](https://github.com/PX4/PX4-SITL_gazebo).
+It's not my priority to write better setup instructions right now, but I'm using Ubuntu 20.04, ROS Noetic, Gazebo 11, MAVROS [2.2.0](https://github.com/mavlink/mavros/tree/2.2.0), PX4-Autopilot [1.13.0](https://github.com/PX4/PX4-Autopilot/tree/v1.13.0) and the latest [PX4-SITL_gazebo](https://github.com/PX4/PX4-SITL_gazebo).
 
 
 ### How to run the simulation
