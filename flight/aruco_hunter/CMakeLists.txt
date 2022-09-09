@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   geographic_msgs
   rospy
-  edra_msgs
+  aruco_msgs
   std_msgs
 )
 

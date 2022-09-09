@@ -54,19 +54,19 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>geographic_msgs</build_depend>
   <build_depend>rospy</build_depend>
-  <build_depend>edra_msgs</build_depend>
+  <build_depend>aruco_msgs</build_depend>
   <build_export_depend>mavros</build_export_depend>
   <build_export_depend>mavros_msgs</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>geographic_msgs</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
-  <build_export_depend>edra_msgs</build_export_depend>
+  <build_export_depend>aruco_msgs</build_export_depend>
   <exec_depend>mavros</exec_depend>
   <exec_depend>mavros_msgs</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>geographic_msgs</exec_depend>
   <exec_depend>rospy</exec_depend>
-  <exec_depend>edra_msgs</exec_depend>
+  <exec_depend>aruco_msgs</exec_depend>
   
 
   <!-- The export tag contains other, unspecified, tags -->
