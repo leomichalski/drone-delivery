@@ -9,16 +9,16 @@
 #include <sensor_msgs/NavSatFix.h>
 
 #include <cmath>
+#include <sstream>
+#include <string>
 
 #include "GeographicLib/Geoid.hpp"
 
 // state machine states
 const int MODE_ARUCO_SEARCH = 2;
-const int MODE_START_DELIVERY = 4;
 const int MODE_DELIVERY = 6;
-const int MODE_LAND = 8;
-const int MODE_START_RETURN_HOME = 10;
-const int MODE_RETURN_HOME = 12;
+const int MODE_RETURN_LAUNCH = 10;
+const int _MODE_RETURN_LAUNCH = 11;
 int mode_g = MODE_ARUCO_SEARCH;
 
 // global variables related to the waypoints
@@ -32,7 +32,7 @@ ros::Subscriber state_sub;
 ros::Publisher global_pos_pub;
 ros::Subscriber global_pos_sub;
 
-struct waypoint {
+struct dest_struct {
   double latitude;
   double longitude;
   double altitude;
@@ -41,33 +41,33 @@ struct waypoint {
 // other stuff
 mavros_msgs::State current_state;
 geographic_msgs::GeoPoseStamped global_position;
-geographic_msgs::GeoPoseStamped next_pose_g;
+geographic_msgs::GeoPoseStamped next_dest_g;
 bool global_position_received = false;
 
-bool is_same_longitude(double lon1, double lon2) {
-  // 0.00005 is a 5.5 meters precision
-  if (std::abs(lon1 - lon2) < 0.00005) {
-    return true;
-  }
-  return false;
-}
 bool is_same_latitude(double lat1, double lat2) {
-  // 0.00005 is a 5.5 meters precision
+  // 0.00005 is a 5.5 meter(s) precision
   if (std::abs(lat1 - lat2) < 0.00005) {
     return true;
   }
   return false;
 }
-bool is_same_altitude(double alt1, double alt2) {
-  // 4.0 is 4.0 meters precision
-  if (std::abs(alt1 - alt2) < 4.0) {
+bool is_same_longitude(double lon1, double lon2) {
+  // 0.00005 is a 5.5 meter(s) precision
+  if (std::abs(lon1 - lon2) < 0.00005) {
     return true;
   }
   return false;
 }
-bool is_same_coord(double lon1, double lat1, double alt1, double lon2,
-                   double lat2, double alt2) {
-  return is_same_longitude(lon1, lon2) && is_same_latitude(lat1, lat2) &&
+bool is_same_altitude(double alt1, double alt2) {
+  // 1.0 is 1.0 meter(s) precision
+  if (std::abs(alt1 - alt2) < 1.0) {
+    return true;
+  }
+  return false;
+}
+bool is_same_coord(double lat1, double lon1, double alt1, double lat2,
+                   double lon2, double alt2) {
+  return is_same_latitude(lat1, lat2) && is_same_longitude(lon1, lon2) &&
          is_same_altitude(alt1, alt2);
 }
 
@@ -86,12 +86,12 @@ double ellipsoid_height_to_amsl(double lat, double lon,
 }
 
 void set_destination(double lat, double lon, double alt) {
-  next_pose_g.header.stamp = ros::Time::now();
-  next_pose_g.pose.position.latitude = lat;
-  next_pose_g.pose.position.longitude = lon;
-  next_pose_g.pose.position.altitude = alt;
+  next_dest_g.header.stamp = ros::Time::now();
+  next_dest_g.pose.position.latitude = lat;
+  next_dest_g.pose.position.longitude = lon;
+  next_dest_g.pose.position.altitude = alt;
 
-  global_pos_pub.publish(next_pose_g);
+  global_pos_pub.publish(next_dest_g);
 }
 
 void global_position_cb(const sensor_msgs::NavSatFix::ConstPtr& msg) {
@@ -118,7 +118,7 @@ void aruco_detection_cb(const edra_msgs::ArucoDetection::ConstPtr& msg) {
   // we have found the target float deltaX = abs(center_x -
   // current_pose_g.pose.pose.position.x);
   if (mode_g == MODE_ARUCO_SEARCH) {
-    mode_g = MODE_START_DELIVERY;
+    mode_g = MODE_DELIVERY;
   }
 }
 
@@ -165,45 +165,47 @@ int main(int argc, char** argv) {
 
   // INITIAL POSITION AND GOALS
 
-  std::vector<waypoint> pose_list;
-  waypoint nextWp;
+  std::vector<dest_struct> dest_list;
+  dest_struct dest;
   // don't takeoff, just stay in your position
-  const uint64_t POSE_LIST_IDX_INITIAL_POSITION = pose_list.size();
-  nextWp.latitude = global_position.pose.position.latitude;
-  nextWp.longitude = global_position.pose.position.longitude;
-  nextWp.altitude = global_position.pose.position.altitude;
-  // nextWp.header_stamp = ros::Time::now();
-  pose_list.push_back(nextWp);
+  const uint64_t DEST_LIST_IDX_INITIAL_POSITION = dest_list.size();
+  dest.latitude = global_position.pose.position.latitude;
+  dest.longitude = global_position.pose.position.longitude;
+  dest.altitude = global_position.pose.position.altitude;
+  // dest.header_stamp = ros::Time::now();
+  dest_list.push_back(dest);
   // takeoff
   // TODO: calculate if the drone is already in the air before taking off (get
   // the current place (netherlands, FGA) altitude from lat and long, then check
   // if it's higher than the current MAV altitude)
-  const uint64_t POSE_LIST_IDX_TAKEOFF = pose_list.size();
-  nextWp.latitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].latitude;
-  nextWp.longitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].longitude;
-  nextWp.altitude =
-      pose_list[POSE_LIST_IDX_INITIAL_POSITION].altitude + TAKEOFF_ALTITUDE;
-  pose_list.push_back(nextWp);
-  // just another goal
-  nextWp.latitude = 52.1709853;
-  nextWp.longitude = 4.4188708;
-  pose_list.push_back(nextWp);
-  // // just another goal
-  // pose.pose.position.latitude = ;
-  // pose.pose.position.longitude = ;
-  // pose_list.push_back(nextWp);
+  const uint64_t DEST_LIST_IDX_TAKEOFF = dest_list.size();
+  dest.latitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude;
+  dest.longitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude;
+  dest.altitude =
+      dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude + TAKEOFF_ALTITUDE;
+  dest_list.push_back(dest);
+
+  // other waypoints
+  std::ifstream source;  // build a read-Stream
+  source.open("waypoints.txt", std::ios_base::in);  // open data file
+  for (std::string line; std::getline(source, line);) {
+    std::istringstream in(line);  // make a stream for the line itself
+    in >> dest.latitude >> dest.longitude;
+    dest_list.push_back(dest);
+  }
+
   // return to launch
-  const uint64_t POSE_LIST_IDX_RETURNING_TO_LAUNCH = pose_list.size();
-  nextWp.latitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].latitude;
-  nextWp.longitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].longitude;
-  nextWp.altitude = pose_list[POSE_LIST_IDX_TAKEOFF].altitude;
-  pose_list.push_back(nextWp);
+  const uint64_t DEST_LIST_IDX_RETURNING_TO_LAUNCH = dest_list.size();
+  dest.latitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude;
+  dest.longitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude;
+  dest.altitude = dest_list[DEST_LIST_IDX_TAKEOFF].altitude;
+  dest_list.push_back(dest);
   // land
-  const uint64_t POSE_LIST_IDX_LAND = pose_list.size();
-  nextWp.latitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].latitude;
-  nextWp.longitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].longitude;
-  nextWp.altitude = pose_list[POSE_LIST_IDX_INITIAL_POSITION].altitude;
-  pose_list.push_back(nextWp);
+  const uint64_t DEST_LIST_IDX_LAND = dest_list.size();
+  dest.latitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude;
+  dest.longitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude;
+  dest.altitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude;
+  dest_list.push_back(dest);
 
   // // WP 1
   // wp.frame = mavros_msgs::Waypoint::FRAME_GLOBAL_REL_ALT;
@@ -214,9 +216,9 @@ int main(int argc, char** argv) {
 
   // send a few setpoints before starting
   for (int i = 0; ros::ok() && i < 20; ++i) {
-    set_destination(pose_list[POSE_LIST_IDX_INITIAL_POSITION].latitude,
-                    pose_list[POSE_LIST_IDX_INITIAL_POSITION].longitude,
-                    pose_list[POSE_LIST_IDX_INITIAL_POSITION].altitude);
+    set_destination(dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude,
+                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude,
+                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude);
     ros::spinOnce();
     rate.sleep();
   }
@@ -250,9 +252,9 @@ int main(int argc, char** argv) {
       }
       last_request = ros::Time::now();
     }
-    set_destination(pose_list[POSE_LIST_IDX_INITIAL_POSITION].latitude,
-                    pose_list[POSE_LIST_IDX_INITIAL_POSITION].longitude,
-                    pose_list[POSE_LIST_IDX_INITIAL_POSITION].altitude);
+    set_destination(dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude,
+                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude,
+                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude);
 
     ros::spinOnce();
     rate.sleep();
@@ -284,120 +286,89 @@ int main(int argc, char** argv) {
       }
       last_request = ros::Time::now();
     }
-    set_destination(pose_list[POSE_LIST_IDX_INITIAL_POSITION].latitude,
-                    pose_list[POSE_LIST_IDX_INITIAL_POSITION].longitude,
-                    pose_list[POSE_LIST_IDX_INITIAL_POSITION].altitude);
+    set_destination(dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude,
+                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude,
+                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude);
 
     ros::spinOnce();
     rate.sleep();
   }
 
-  // TODO: better takeoff logic
-  // uint64_t pose_list_idx = 0;
-  // ROS_INFO("Taking off to: lat=%f, long=%f, alt=%f",
-  //          pose_list[POSE_LIST_IDX_TAKEOFF].pose.position.latitude,
-  //          pose_list[POSE_LIST_IDX_TAKEOFF].pose.position.longitude,
-  //          pose_list[POSE_LIST_IDX_TAKEOFF].pose.position.altitude);
-  // while (ros::ok()) {
-  //   pose_list[POSE_LIST_IDX_TAKEOFF].header.stamp = ros::Time::now();
-  //   global_pos_pub.publish(pose_list[POSE_LIST_IDX_TAKEOFF]);
-  //   ros::spinOnce();
-  //   ROS_INFO_THROTTLE(1, "UAV at: lat=%f, long=%f, alt=%f",
-  //                     global_position.pose.position.latitude,
-  //                     global_position.pose.position.longitude,
-  //                     global_position.pose.position.altitude);
-  //   }
   // TAKEOFF
-  int pose_list_idx = POSE_LIST_IDX_TAKEOFF;
+  int dest_list_idx = DEST_LIST_IDX_TAKEOFF;
   while (ros::ok()) {
-    set_destination(pose_list[pose_list_idx].latitude,
-                    pose_list[pose_list_idx].longitude,
-                    pose_list[pose_list_idx].altitude);
+    set_destination(dest_list[dest_list_idx].latitude,
+                    dest_list[dest_list_idx].longitude,
+                    dest_list[dest_list_idx].altitude);
 
     ros::spinOnce();
     rate.sleep();
     if (is_same_altitude(global_position.pose.position.altitude,
-                         pose_list[pose_list_idx].altitude)) {
+                         dest_list[dest_list_idx].altitude)) {
       ROS_INFO("UAV at takeoff altitude");
-      pose_list_idx++;
+      dest_list_idx++;
       break;
     }
   }
 
-  // uint64_t pose_list_idx = POSE_LIST_IDX_TAKEOFF;
+  ros::Time start_delivery_time;
   while (ros::ok()) {
-    set_destination(pose_list[pose_list_idx].latitude,
-                    pose_list[pose_list_idx].longitude,
-                    pose_list[pose_list_idx].altitude);
+    if (mode_g == MODE_ARUCO_SEARCH || mode_g == _MODE_RETURN_LAUNCH) {
+      set_destination(dest_list[dest_list_idx].latitude,
+                      dest_list[dest_list_idx].longitude,
+                      dest_list[dest_list_idx].altitude);
 
-    if (is_same_coord(global_position.pose.position.longitude,
-                      global_position.pose.position.latitude,
-                      global_position.pose.position.altitude,
-                      next_pose_g.pose.position.longitude,
-                      next_pose_g.pose.position.latitude,
-                      next_pose_g.pose.position.altitude)) {
-      pose_list_idx++;
-      if (pose_list_idx >= pose_list.size()) {
-        break;
+      if (is_same_coord(global_position.pose.position.latitude,
+                        global_position.pose.position.longitude,
+                        global_position.pose.position.altitude,
+                        next_dest_g.pose.position.latitude,
+                        next_dest_g.pose.position.longitude,
+                        next_dest_g.pose.position.altitude)) {
+        dest_list_idx++;
+        if (dest_list_idx >= dest_list.size()) {
+          break;
+        }
+        ROS_INFO("UAV heading to lat=%f, lon=%f, alt=%f",
+                 dest_list[dest_list_idx].latitude,
+                 dest_list[dest_list_idx].longitude,
+                 dest_list[dest_list_idx].altitude);
       }
-      ROS_INFO("UAV heading to lat=%f, lon=%f, alt=%f",
-               pose_list[pose_list_idx].latitude,
-               pose_list[pose_list_idx].longitude,
-               pose_list[pose_list_idx].altitude);
+      ros::spinOnce();
+      rate.sleep();
+    } else if (mode_g == MODE_DELIVERY) {
+      set_destination(global_position.pose.position.latitude,
+                      global_position.pose.position.longitude,
+                      2.0);
+      ROS_INFO("Getting down to deliver the package");
+
+      ros::spinOnce();
+      rate.sleep();
+      if (is_same_coord(global_position.pose.position.latitude,
+                        global_position.pose.position.longitude,
+                        global_position.pose.position.altitude,
+                        next_dest_g.pose.position.latitude,
+                        next_dest_g.pose.position.longitude,
+                        next_dest_g.pose.position.altitude)) {
+        ROS_INFO("UAV at delivery altitude");
+        // keep the UAV at the same altitude for a while
+        // 15 seconds
+        start_delivery_time = ros::Time::now();
+        while ((ros::ok()) && (ros::Time::now() - start_delivery_time < ros::Duration(15))) {
+          set_destination(global_position.pose.position.latitude,
+                          global_position.pose.position.longitude,
+                          2.0);
+          ros::spinOnce();
+          rate.sleep();
+        }
+        mode_g = MODE_RETURN_LAUNCH;
+      }
+    } else if (mode_g == MODE_RETURN_LAUNCH) {
+      ROS_INFO("Returning to launch position");
+      mode_g = _MODE_RETURN_LAUNCH;
+      dest_list_idx = DEST_LIST_IDX_RETURNING_TO_LAUNCH;
     }
-    ros::spinOnce();
-    rate.sleep();
   }
-
-  //   ros::Rate rate(2.0);
-  //   int i = 0;
-  //   while (ros::ok()) {
-  //     if (mode_g == MODE_ARUCO_SEARCH) {
-  //       ros::spinOnce();
-  //       rate.sleep();
-  //       if (check_waypoint_reached(0.3)) {
-  //         if (i < pose_list.size()) {
-  //           set_destination(pose_list[i].x, pose_list[i].y, pose_list[i].z,
-  //           pose_list[i].psi); i++;
-  //         } else {
-  //           mode_g = MODE_START_RETURN_HOME;
-  //         }
-  //       }
-  //     } else if (mode_g == MODE_START_DELIVERY) {
-  //       // TODO: implement precision descending until 2 meters high (not
-  //       landing)
-  //       // TODO: jeito certo de pegar a position atual do drone
-  //       current_position = get_current_location();
-  //       set_destination(current_position.x, current_position.y, 2,
-  //       pose_list[i].psi);
-  //       // land();
-  //       ROS_INFO("Getting down to deliver the package");
-  //       // break;
-  //       mode_g = MODE_DELIVERY;
-  //     } else if (mode_g == MODE_DELIVERY) {
-  //       ros::spinOnce();
-  //       rate.sleep();
-  //       if (check_waypoint_reached(0.3)) {
-  //         ROS_INFO("Delivery started");
-  //         // HOVER FOR SOME SECONDS, THEN RETURN HOME
-  //         ros::Duration(15).sleep();
-  //         mode_g = MODE_START_RETURN_HOME;
-  //       }
-
-  //     } else if (mode_g == MODE_START_RETURN_HOME) {
-  //       mode_g = MODE_RETURN_HOME;
-  //       set_destination(pose_list[0].x, pose_list[0].y, pose_list[0].z,
-  //       pose_list[0].psi); ROS_INFO("Returning to home");
-  //     } else if (mode_g == MODE_RETURN_HOME) {
-  //       ros::spinOnce();
-  //       rate.sleep();
-  //       if (check_waypoint_reached(0.3)) {
-  //         land();
-  //         ROS_INFO("Landing started");
-  //         break;
-  //       }
-  //     }
-  //   }
 
   return 0;
 }
+
