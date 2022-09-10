@@ -1,4 +1,4 @@
-#include <edra_msgs/ArucoDetection.h>
+#include <aruco_msgs/ArucoDetection.h>
 #include <geographic_msgs/GeoPoseStamped.h>
 #include <inttypes.h>
 #include <mavros_msgs/CommandBool.h>
@@ -107,7 +107,7 @@ void global_position_cb(const sensor_msgs::NavSatFix::ConstPtr& msg) {
 
 void state_cb(const mavros_msgs::State::ConstPtr& msg) { current_state = *msg; }
 
-void aruco_detection_cb(const edra_msgs::ArucoDetection::ConstPtr& msg) {
+void aruco_detection_cb(const aruco_msgs::ArucoDetection::ConstPtr& msg) {
   int32_t marker_id = msg->marker_id;
   float center_x = msg->marker_center[0];
   float center_y = msg->marker_center[1];
@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "offb_node");
   ros::NodeHandle nh;
 
-  aruco_detection_sub = nh.subscribe<edra_msgs::ArucoDetection>("/aruco_detection", 1, aruco_detection_cb);
+  aruco_detection_sub = nh.subscribe<aruco_msgs::ArucoDetection>("/aruco_detection", 1, aruco_detection_cb);
 
   arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
   set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");

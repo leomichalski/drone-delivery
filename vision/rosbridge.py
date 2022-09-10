@@ -5,7 +5,7 @@ import numpy as np
 import rospy
 from std_msgs.msg import Bool, String
 from sensor_msgs.msg import Image
-from edra_msgs.msg import ArucoDetection
+from aruco_msgs.msg import ArucoDetection
 
 import topics
 import msgs
