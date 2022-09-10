@@ -11,8 +11,8 @@ class ArucoDetector(object):
     def __init__(self):
 
         # Load the dictionary that was used to generate the markers.
-        # There's different aruco marker dictionaries, this code uses 6x6
-        self.dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
+        # There's different aruco marker dictionaries, this code uses 5x5
+        self.dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_250)
 
         # Initialize the detector parameters using default values
         self.detector_parameters = cv2.aruco.DetectorParameters_create()
@@ -36,7 +36,7 @@ class ArucoDetector(object):
         start_time = time.time()
 
         img = cv2.LUT(img, self.lookup_table)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         marker_corner_list, marker_id_list, rejected_candidates = cv2.aruco.detectMarkers(img, self.dictionary, parameters=self.detector_parameters)
 
         # # # draw box around aruco marker within camera frame
