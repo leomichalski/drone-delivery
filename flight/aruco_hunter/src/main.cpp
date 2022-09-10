@@ -21,8 +21,8 @@ const int MODE_RETURN_LAUNCH = 10;
 const int _MODE_RETURN_LAUNCH = 11;
 int mode_g = MODE_ARUCO_SEARCH;
 
-// global variables related to the waypoints
-const double TAKEOFF_ALTITUDE = 15.0;  // in meters
+// global variables related to the mission
+const double TAKEOFF_HEIGHT = 15.0;  // in meters
 
 // Publishers, subscribers, services
 ros::Subscriber aruco_detection_sub;
@@ -65,24 +65,22 @@ bool is_same_altitude(double alt1, double alt2) {
   }
   return false;
 }
-bool is_same_coord(double lat1, double lon1, double alt1, double lat2,
-                   double lon2, double alt2) {
-  return is_same_latitude(lat1, lat2) && is_same_longitude(lon1, lon2) &&
-         is_same_altitude(alt1, alt2);
+bool is_same_coord(double lat1, double lon1, double alt1,
+                   double lat2, double lon2, double alt2) {
+  return is_same_latitude(lat1, lat2) && is_same_longitude(lon1, lon2) && is_same_altitude(alt1, alt2);
 }
 
 // TODO: make a lib to call GeographicLib
 GeographicLib::Geoid _egm96("egm96-5");  // WARNING: not thread safe
 
-double calc_geoid_height(double lat, double lon) { return _egm96(lat, lon); }
-double amsl_to_ellipsoid_height(double lat, double lon, double amsl) {
-  return amsl +
-         GeographicLib::Geoid::GEOIDTOELLIPSOID * calc_geoid_height(lat, lon);
+double calc_geoid_height(double lat, double lon) {
+  return _egm96(lat, lon);
 }
-double ellipsoid_height_to_amsl(double lat, double lon,
-                                double ellipsoid_height) {
-  return ellipsoid_height +
-         GeographicLib::Geoid::ELLIPSOIDTOGEOID * calc_geoid_height(lat, lon);
+double amsl_to_ellipsoid_height(double lat, double lon, double amsl) {
+  return amsl + GeographicLib:: Geoid::GEOIDTOELLIPSOID * calc_geoid_height(lat, lon);
+}
+double ellipsoid_height_to_amsl(double lat, double lon, double ellipsoid_height) {
+  return ellipsoid_height + GeographicLib::Geoid::ELLIPSOIDTOGEOID * calc_geoid_height(lat, lon);
 }
 
 void set_destination(double lat, double lon, double alt) {
@@ -98,8 +96,11 @@ void global_position_cb(const sensor_msgs::NavSatFix::ConstPtr& msg) {
   global_position.header.stamp = msg->header.stamp;
   global_position.pose.position.latitude = msg->latitude;
   global_position.pose.position.longitude = msg->longitude;
-  global_position.pose.position.altitude =
-      ellipsoid_height_to_amsl(msg->latitude, msg->longitude, msg->altitude);
+  global_position.pose.position.altitude = ellipsoid_height_to_amsl(
+    msg->latitude,
+    msg->longitude,
+    msg->altitude
+  );
   global_position_received = true;
 }
 
@@ -111,12 +112,7 @@ void aruco_detection_cb(const edra_msgs::ArucoDetection::ConstPtr& msg) {
   float center_y = msg->marker_center[1];
   float elapsed_time = msg->elapsed_time;
   uint32_t image_creation_time = msg->image_creation_time;
-  // ROS_INFO("Marker ID: %d, Center: (%f, %f), Elapsed time: %f, Image creation
-  // time: %" PRIu32, marker_id, center_x, center_y, elapsed_time,
-  // image_creation_time);
-  // TODO: if the mav is within a 100m radius of the current gps location, then
-  // we have found the target float deltaX = abs(center_x -
-  // current_pose_g.pose.pose.position.x);
+  // TODO: if the mav is within a 100m radius of the current gps location, then we have found the target
   if (mode_g == MODE_ARUCO_SEARCH) {
     mode_g = MODE_DELIVERY;
   }
@@ -126,17 +122,13 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "offb_node");
   ros::NodeHandle nh;
 
-  aruco_detection_sub = nh.subscribe<edra_msgs::ArucoDetection>(
-      "/aruco_detection", 1, aruco_detection_cb);
+  aruco_detection_sub = nh.subscribe<edra_msgs::ArucoDetection>("/aruco_detection", 1, aruco_detection_cb);
 
-  arming_client =
-      nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
+  arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
   set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
   state_sub = nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
-  global_pos_pub = nh.advertise<geographic_msgs::GeoPoseStamped>(
-      "mavros/setpoint_position/global", 10);
-  global_pos_sub = nh.subscribe<sensor_msgs::NavSatFix>(
-      "mavros/global_position/global", 1, global_position_cb);
+  global_pos_pub = nh.advertise<geographic_msgs::GeoPoseStamped>("mavros/setpoint_position/global", 10);
+  global_pos_sub = nh.subscribe<sensor_msgs::NavSatFix>("mavros/global_position/global", 1, global_position_cb);
 
   // the setpoint publishing rate MUST be faster than 2Hz
   ros::Rate rate(10.0);
@@ -158,10 +150,12 @@ int main(int argc, char** argv) {
     ros::spinOnce();
     rate.sleep();
   }
-  ROS_INFO("Got global position: lat=%f, long=%f, alt=%f",
-           global_position.pose.position.latitude,
-           global_position.pose.position.longitude,
-           global_position.pose.position.altitude);
+  ROS_INFO(
+    "Got global position: lat=%f, long=%f, alt=%f",
+    global_position.pose.position.latitude,
+    global_position.pose.position.longitude,
+    global_position.pose.position.altitude
+  );
 
   // INITIAL POSITION AND GOALS
 
@@ -181,13 +175,12 @@ int main(int argc, char** argv) {
   const uint64_t DEST_LIST_IDX_TAKEOFF = dest_list.size();
   dest.latitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude;
   dest.longitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude;
-  dest.altitude =
-      dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude + TAKEOFF_ALTITUDE;
+  dest.altitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude + TAKEOFF_HEIGHT;
   dest_list.push_back(dest);
 
-  // other waypoints
-  std::ifstream source;  // build a read-Stream
-  source.open("waypoints.txt", std::ios_base::in);  // open data file
+  // read mission waypoints from a file
+  std::ifstream source;
+  source.open("waypoints.txt", std::ios_base::in);
   for (std::string line; std::getline(source, line);) {
     std::istringstream in(line);  // make a stream for the line itself
     in >> dest.latitude >> dest.longitude;
@@ -207,18 +200,13 @@ int main(int argc, char** argv) {
   dest.altitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude;
   dest_list.push_back(dest);
 
-  // // WP 1
-  // wp.frame = mavros_msgs::Waypoint::FRAME_GLOBAL_REL_ALT;
-  // wp.command = mavros_msgs::CommandCode::NAV_LOITER_TIME;
-  // // WP 3
-  // wp.frame = mavros_msgs::Waypoint::FRAME_MISSION;
-  // wp.command = mavros_msgs::CommandCode::NAV_RETURN_TO_LAUNCH;
-
   // send a few setpoints before starting
   for (int i = 0; ros::ok() && i < 20; ++i) {
-    set_destination(dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude,
-                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude,
-                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude);
+    set_destination(
+      dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude,
+      dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude,
+      dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude
+    );
     ros::spinOnce();
     rate.sleep();
   }
@@ -239,11 +227,9 @@ int main(int argc, char** argv) {
     }
     ROS_INFO("Waiting 'set mode to OFFBOARD'...");
     // if takes more than 5 seconds to arm,
-    if ((retry_counter == 0) ||
-        (ros::Time::now() - last_request > ros::Duration(5))) {
+    if ((retry_counter == 0) || (ros::Time::now() - last_request > ros::Duration(5))) {
       retry_counter++;
-      if (set_mode_client.call(offb_set_mode) &&
-          offb_set_mode.response.mode_sent) {
+      if (set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent) {
         ROS_INFO("Sent 'set mode to OFFBOARD' message");
       } else {
         ROS_INFO(
@@ -252,9 +238,11 @@ int main(int argc, char** argv) {
       }
       last_request = ros::Time::now();
     }
-    set_destination(dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude,
-                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude,
-                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude);
+    set_destination(
+      dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude,
+      dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude,
+      dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude
+    );
 
     ros::spinOnce();
     rate.sleep();
@@ -276,8 +264,7 @@ int main(int argc, char** argv) {
     }
     ROS_INFO("Waiting arm...");
     // if takes more than 5 seconds to arm,
-    if ((retry_counter == 0) ||
-        (ros::Time::now() - last_request > ros::Duration(5))) {
+    if ((retry_counter == 0) || (ros::Time::now() - last_request > ros::Duration(5))) {
       retry_counter++;
       if (arming_client.call(arm_cmd) && arm_cmd.response.success) {
         ROS_INFO("Sent arming message");
@@ -286,9 +273,11 @@ int main(int argc, char** argv) {
       }
       last_request = ros::Time::now();
     }
-    set_destination(dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude,
-                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude,
-                    dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude);
+    set_destination(
+      dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude,
+      dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude,
+      dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude
+    );
 
     ros::spinOnce();
     rate.sleep();
@@ -297,9 +286,11 @@ int main(int argc, char** argv) {
   // TAKEOFF
   int dest_list_idx = DEST_LIST_IDX_TAKEOFF;
   while (ros::ok()) {
-    set_destination(dest_list[dest_list_idx].latitude,
-                    dest_list[dest_list_idx].longitude,
-                    dest_list[dest_list_idx].altitude);
+    set_destination(
+      dest_list[dest_list_idx].latitude,
+      dest_list[dest_list_idx].longitude,
+      dest_list[dest_list_idx].altitude
+    );
 
     ros::spinOnce();
     rate.sleep();
@@ -314,9 +305,11 @@ int main(int argc, char** argv) {
   ros::Time start_delivery_time;
   while (ros::ok()) {
     if (mode_g == MODE_ARUCO_SEARCH || mode_g == _MODE_RETURN_LAUNCH) {
-      set_destination(dest_list[dest_list_idx].latitude,
-                      dest_list[dest_list_idx].longitude,
-                      dest_list[dest_list_idx].altitude);
+      set_destination(
+        dest_list[dest_list_idx].latitude,
+        dest_list[dest_list_idx].longitude,
+        dest_list[dest_list_idx].altitude
+      );
 
       if (is_same_coord(global_position.pose.position.latitude,
                         global_position.pose.position.longitude,
@@ -328,17 +321,21 @@ int main(int argc, char** argv) {
         if (dest_list_idx >= dest_list.size()) {
           break;
         }
-        ROS_INFO("UAV heading to lat=%f, lon=%f, alt=%f",
-                 dest_list[dest_list_idx].latitude,
-                 dest_list[dest_list_idx].longitude,
-                 dest_list[dest_list_idx].altitude);
+        ROS_INFO(
+          "UAV heading to lat=%f, lon=%f, alt=%f",
+          dest_list[dest_list_idx].latitude,
+          dest_list[dest_list_idx].longitude,
+          dest_list[dest_list_idx].altitude
+        );
       }
       ros::spinOnce();
       rate.sleep();
     } else if (mode_g == MODE_DELIVERY) {
-      set_destination(global_position.pose.position.latitude,
-                      global_position.pose.position.longitude,
-                      2.0);
+      set_destination(
+        global_position.pose.position.latitude,
+        global_position.pose.position.longitude,
+        2.0
+      );
       ROS_INFO("Getting down to deliver the package");
 
       ros::spinOnce();
@@ -354,9 +351,11 @@ int main(int argc, char** argv) {
         // 15 seconds
         start_delivery_time = ros::Time::now();
         while ((ros::ok()) && (ros::Time::now() - start_delivery_time < ros::Duration(15))) {
-          set_destination(global_position.pose.position.latitude,
-                          global_position.pose.position.longitude,
-                          2.0);
+          set_destination(
+            global_position.pose.position.latitude,
+            global_position.pose.position.longitude,
+            2.0
+          );
           ros::spinOnce();
           rate.sleep();
         }
@@ -371,4 +370,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-
