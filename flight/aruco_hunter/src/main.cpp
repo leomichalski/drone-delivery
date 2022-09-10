@@ -22,7 +22,7 @@ const int _MODE_RETURN_LAUNCH = 11;
 int mode_g = MODE_ARUCO_SEARCH;
 
 // global variables related to the mission
-const double TAKEOFF_HEIGHT = 15.0;  // in meters
+const double TAKEOFF_HEIGHT = 10.0;  // in meters
 const double PACKAGE_DELIVERY_HEIGHT = 2.0;  // in meters
 
 // Publishers, subscribers, services
