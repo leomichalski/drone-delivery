@@ -45,21 +45,6 @@ def parse_args():
     )
 
     ap.add_argument(
-        "--mode-gazebo",
-        action='store_true', default=False,
-        help=""
-    )
-    ap.add_argument(
-        "--mode-raspberry",
-        action='store_true', default=False,
-        help=""
-    )
-    ap.add_argument(
-        "--mode-raspberry-simulation",
-        action='store_true', default=False,
-        help=""
-    )
-    ap.add_argument(
         "--using-vpn",
         action='store_true', default=False,
         help=""
@@ -133,38 +118,10 @@ def parse_args():
     if args.using_gazebo:
         args.using_ros = True
 
-    if args.mode_gazebo:
-        args.webstream_video = True
-        args.detect_aruco = True
-        args.using_ros = True
-        args.using_gazebo = True
-        args.using_vpn = False
-
-    if args.mode_raspberry:
-        args.webstream_video = True
-        args.detect_aruco = True
-        args.using_ros = True
-        args.using_gazebo = False
-        # args.using_vpn = True  # it depends on your network choice
-
-    if args.mode_raspberry_simulation:
-        args.webstream_video = True
-        args.save_video = True
-        args.detect_aruco = True
-        args.using_ros = True
-        args.using_gazebo = False
-        # args.using_vpn = True  # it depends on your network choice
-
-    if not args.mode_gazebo \
-            and not args.mode_raspberry \
-            and not args.mode_raspberry_simulation \
-            and not args.webstream_video \
+    if not args.webstream_video \
             and not args.save_video \
             and not args.detect_aruco:
         raise Exception('Please select at least one of the following options: '
-                        '--' + 'mode-gazebo' + '; '
-                        '--' + 'mode-raspberry' + '; '
-                        '--' + 'mode-raspberry-simulation' + '; '
                         '--' + 'webstream-video' + '; '
                         '--' + 'save-video' + '; '
                         '--' + 'detect-aruco' + '. ')
