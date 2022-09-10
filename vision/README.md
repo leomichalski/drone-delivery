@@ -28,3 +28,21 @@ pip3 install requirements.txt
 # install libraries specific to raspberry pi boards
 pip3 install requirements_raspberry.txt
 ```
+
+
+#### How to run
+
+```
+# use the following command to check your options
+python3 main.py --help
+
+
+# e.g to live stream the drone footage, run
+python3 main.py --webstream-video
+
+# e.g to live stream the drone footage and detect aruco markers, run
+python3 main.py --webstream-video --detect-aruco
+
+# e.g to detect aruco markers and publish the detections to ROS, run
+python3 main.py --detect-aruco --using-ros
+```
