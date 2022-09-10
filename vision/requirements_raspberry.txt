@@ -1,11 +1,4 @@
-opencv-contrib-python==4.5.3.56
-Flask==1.0.*
-numpy==1.20.0
 picamera==1.13
-Jinja2==2.10.*
-markupsafe==2.0.1
-itsdangerous==2.0.1
-pyyaml==6.0
 
 # raspberrypi
 # sudo apt install libopenjp2-7-dev  python3-h5py libatlas-base-dev libilmbase23 libopenexr-dev packagekit-gtk3-module

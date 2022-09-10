@@ -1,27 +1,30 @@
-#### Explicação dos arquivos
+#### File list
 
-* [main.py](./main.py): arquivo que roda o programa e faz tudo funcionar em conjunto.
+* [main.py](./main.py): code that glues everything together.
 
-* [videosource.py](./videosource.py): pega as imagens da câmera.
-* [videosaver.py](./videosaver.py): salva as imagens em formato de vídeo.
-* [videowebstreaming.py](./videowebstreaming.py): transmite as imagens via HTTP.
-* [arucodetector.py](./arucodetector.py): arquivo que encapsula o detector de marcadores aruco.
-* [topics.py](./topics.py): tópicos da arquitetura "Publish/Subscribe".
-* [msgs.py](./msgs.py): mensagens da arquitetura "Publish/Subscribe".
-* [utils.py](./utils.py): métodos aleatórios que ajudam em algo.
-* [rosbridge.py](./rosbridge.py): ponte para fazer o código em Python na arquitetura "Publish/Subscribe" funcionar com o código em ROS (que está em outra arquitetura "Publish/Subscribe").
-* [requirements_raspberry.txt](./requirements_raspberry.txt): arquivo com as versões das bibliotecas Python utilizadas na raspberry.
-* [requirements_gazebo.txt](./requirements_gazebo.txt): arquivo com as versões das bibliotecas Python utilizadas em conjunto com o gazebo.
+* [videosource.py](./videosource.py): capture camera images and publish them as a topic.
+* [videosaver.py](./videosaver.py): save the images as videos.
+* [videowebstreaming.py](./videowebstreaming.py): host a site from which is possible to see the latest image the vehicle captured.
+* [arucodetector.py](./arucodetector.py): detect ArUco markers, then publish the detections as a topic.
 
-#### Como instalar
+* [rosbridge.py](./rosbridge.py): bridge so ROS can also access some of the topics.
+
+* [topics.py](./topics.py): topics.
+* [msgs.py](./msgs.py): messages that are published to topics.
+* [utils.py](./utils.py): a few out of place methods.
+
+* [requirements.txt](./requirements.txt): Python libraries used both during simulations and field testing.
+* [requirements_raspberry.txt](./requirements_raspberry.txt): Python libraries specific to the companion computer.
+
+#### How to install
 
 ```
-# criar ambiente virtual
+# create virtual environment
 python3 -m venv --system-site-packages
 
-# instalar na raspberry
-pip3 install requirements_raspberry.txt
+# install libraries
+pip3 install requirements.txt
 
-# instalar no computador com gazebo
-pip3 install requirements_gazebo.txt
+# install libraries specific to raspberry pi boards
+pip3 install requirements_raspberry.txt
 ```
