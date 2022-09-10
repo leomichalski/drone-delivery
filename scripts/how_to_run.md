@@ -1,3 +1,38 @@
+## Manual execution
+WARNING: don't execute the following commands manually on a vehicle with propeller blades.
+
+### How to run the Raspberry Pi code
+The instructions suppose the board has 4 CPU cores.
+
+###### terminal 1
+
+```
+# launch roscore and mavros
+taskset -c 3 roslaunch mavros px4.launch
+```
+
+###### terminal 2
+
+```
+# change the current directory
+cd drone-delivery/vision
+
+# run the computer vision code
+taskset -c 0,1,2 python3 main.py --webstream-video --detect-aruco --using-ros --frames-per-second 7
+
+# for more info, run
+python3 main.py --help
+```
+
+###### terminal 3
+
+```
+# run the guidance, navigation and control code
+taskset -c 3 rosrun aruco_hunter main
+```
+
+## Simulation
+
 ### Setup
 It's not my priority to write better setup instructions right now, but I'm using Ubuntu 20.04, ROS Noetic, Gazebo 11, MAVROS [2.2.0](https://github.com/mavlink/mavros/tree/2.2.0), PX4-Autopilot [1.13.0](https://github.com/PX4/PX4-Autopilot/tree/v1.13.0) and the latest [PX4-SITL_gazebo](https://github.com/PX4/PX4-SITL_gazebo).
 
@@ -42,7 +77,7 @@ rosrun aruco_hunter main
 cd drone-delivery/vision
 
 # run the computer vision related code
-python3 main.py --using-ros --using-gazebo --webstream-video --detect-aruco
+python3 main.py --webstream-video --detect-aruco --using-ros --using-gazebo
 
 # for more info on how to run the computer vision code, run
 python3 main.py --help
