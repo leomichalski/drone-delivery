@@ -1,4 +1,4 @@
-## Manual execution
+## Manual execution on a companion computer
 WARNING: don't execute the following commands manually on a vehicle with propeller blades.
 
 ### How to run the Raspberry Pi code
