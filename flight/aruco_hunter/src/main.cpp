@@ -23,6 +23,7 @@ int mode_g = MODE_ARUCO_SEARCH;
 
 // global variables related to the mission
 const double TAKEOFF_HEIGHT = 15.0;  // in meters
+const double PACKAGE_DELIVERY_HEIGHT = 2.0;  // in meters
 
 // Publishers, subscribers, services
 ros::Subscriber aruco_detection_sub;
@@ -334,7 +335,7 @@ int main(int argc, char** argv) {
       set_destination(
         global_position.pose.position.latitude,
         global_position.pose.position.longitude,
-        2.0
+        dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude + PACKAGE_DELIVERY_HEIGHT
       );
       ROS_INFO("Getting down to deliver the package");
 
@@ -354,7 +355,7 @@ int main(int argc, char** argv) {
           set_destination(
             global_position.pose.position.latitude,
             global_position.pose.position.longitude,
-            2.0
+            dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude + PACKAGE_DELIVERY_HEIGHT
           );
           ros::spinOnce();
           rate.sleep();
