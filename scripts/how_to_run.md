@@ -2,7 +2,7 @@
 WARNING: don't execute the following commands manually on a vehicle with propeller blades.
 
 ### How to run the Raspberry Pi code
-The instructions suppose the board has 4 CPU cores.
+The instructions suppose the board has 4 CPU cores. Tip: use tmux to run the instructions.
 
 ###### terminal 1
 
