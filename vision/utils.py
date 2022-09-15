@@ -1,9 +1,9 @@
 from subprocess import check_output
-import rosgraph
+# import rosgraph
 
 
-def is_roscore_running():
-    return rosgraph.is_master_online()
+# def is_roscore_running():
+#     return rosgraph.is_master_online()
 
 
 def categories_file_to_class_names(categories_file_path):
