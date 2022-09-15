@@ -1,10 +1,6 @@
 import time
 import argparse
 
-from arucodetector import ArucoDetector
-from rosbridge import RosBridge, GazeboVideoSource
-from videowebstreaming import VideoWebStreaming
-from videosaver import VideoSaver
 import utils
 
 
@@ -150,15 +146,18 @@ def main(args):
         )
 
     if args.using_gazebo:
+        from rosbridge import GazeboVideoSource
         gazebo_video_source = GazeboVideoSource()
 
     if args.webstream_video:
+        from videowebstreaming import VideoWebStreaming
         video_web_streaming = VideoWebStreaming(
             ip=ip,
             port=args.web_streaming_port,
         )
 
     if args.save_video:
+        from videosaver import VideoSaver
         video_saver = VideoSaver(
             frames_per_second=args.frames_per_second,
             frame_width=args.frame_width,
@@ -168,15 +167,11 @@ def main(args):
         )
 
     if args.detect_aruco:
-        # image_predictor = ImagePredictor(
-        #     class_names=utils.categories_file_to_class_names("categories.txt"),
-        #     threshold=0.5,
-        # )
+        from arucodetector import ArucoDetector
         aruco_detector = ArucoDetector()
-        # wait for the image classifier model to load
-        # time.sleep(1)
 
     if args.using_ros:
+        from rosbridge import RosBridge
         ros_bridge = RosBridge()
 
     if 'video_source' in locals():
