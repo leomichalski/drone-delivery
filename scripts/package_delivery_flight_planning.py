@@ -1,6 +1,5 @@
 # python3 scripts/package_delivery_flight_planning.py > flight/aruco_hunter/src/waypoints.txt
 # it would be probably be better to solve this problem using analytical geometry, but I had a lot of fixed-point arithmetic trouble with it so I'm using a greedy algorithm
-import numpy as np
 import gmpy2
 
 gmpy2.get_context().precision = 50
@@ -64,25 +63,29 @@ def circumference_point(center_point, radius, angle):
     return [radians_to_degrees(r_latitude), radians_to_degrees(r_longitude)]
 
 
-
 def closest_wp_idx(reference, wp_list):
-    closest_wp = wp_list[0]
+    idx = 0
+    closest_idx = 0
+    closest_wp = wp_list[closest_idx]
     closest_dist = (reference[0] - closest_wp[0])**2 + (reference[1] - closest_wp[1])**2
     for curr_wp in wp_list[1:]:
+        idx += 1
         curr_dist = (reference[0] - curr_wp[0])**2 + (reference[1] - curr_wp[1])**2
         if closest_dist > curr_dist:
+            closest_idx = idx
             closest_wp = curr_wp
             closest_dist = curr_dist
-    return wp_list.index(closest_wp)
+    return closest_idx
 
 
 def distance_point_to_line(point, line):
     [x0, y0], [x1, y1] = line
     return abs((y1 - y0) * point[0] - (x1 - x0) * point[1] + x1 * y0 - y1 * x0) / gmpy2.sqrt((y1 - y0) ** 2 + (x1 - x0) ** 2)
 
-# selecionar e ordenar os waypoints
-def select_waypoints(wp_list, initial_wp_idx):
-    selected_wp_list = [MAV_LOCATION, wp_list[initial_wp_idx]]
+
+# select and sort waypoints
+def select_waypoints(wp_list, initial_wp_idx, distance_between_lines):
+    selected_wp_list = [wp_list[initial_wp_idx]]
     left_adjust = -1
     right_adjust = 1
     right_first = True
@@ -99,7 +102,7 @@ def select_waypoints(wp_list, initial_wp_idx):
             line=[left_wp, right_wp]
         )
 
-        if dist_from_prev_wp > DISTANCE_BETWEEN_LINES * METERS_TO_SEP:
+        if dist_from_prev_wp > distance_between_lines * METERS_TO_SEP:
             if right_first:
                 selected_wp_list.append(right_wp)
                 selected_wp_list.append(left_wp)
@@ -113,26 +116,80 @@ def select_waypoints(wp_list, initial_wp_idx):
     return selected_wp_list
 
 
-if __name__ == '__main__':
+def parse_args():
+    import argparse
+    ap = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    ap.add_argument(
+        '--mav-location-lat',
+        type=gmpy2.mpfr,
+        default=gmpy2.mpfr(52.171974),
+        help="vehicle location latitude"
+    )
+    ap.add_argument(
+        '--mav-location-lon',
+        type=gmpy2.mpfr,
+        default=gmpy2.mpfr(4.417091),
+        help="vehicle location longitude"
+    )
+    ap.add_argument(
+        '--delivery-location-lat',
+        type=gmpy2.mpfr,
+        default=gmpy2.mpfr(52.169916),
+        help="package delivery location latitude"
+    )
+    ap.add_argument(
+        '--delivery-location-lon',
+        type=gmpy2.mpfr,
+        default=gmpy2.mpfr(4.415763),
+        help="package delivery location longitude"
+    )
+    ap.add_argument(
+        '--distance-between-lines',
+        type=gmpy2.mpfr,
+        default=gmpy2.mpfr(10),
+        help="distance that fits in the MAV camera (in meters)"
+    )
+    ap.add_argument(
+        '--radius',
+        type=gmpy2.mpfr,
+        default=gmpy2.mpfr(100),
+        help="radius around package delivery location in which to look for the delivery location (in meters)"
+    )
+    args = ap.parse_args()
+    return args
 
-    MAV_LOCATION = [gmpy2.mpfr(52.171974), gmpy2.mpfr(4.417091)]
-    DELIVERY_LOCATION = [gmpy2.mpfr(52.169916), gmpy2.mpfr(4.415763)]
-    DISTANCE_BETWEEN_LINES = gmpy2.mpfr(10)  # in meters
-    RADIUS = gmpy2.mpfr(111)  # in meters
 
-    # gerar 360 pontos na circunferencia
+def main(args):
+    # generate some points around the delivery location
     tmp_wp_list = []
     for degs in range(0, 360):
-        wp = circumference_point(
-            center_point=DELIVERY_LOCATION,
-            radius=RADIUS,
+        x, y = circumference_point(
+            center_point=[args.delivery_location_lat, args.delivery_location_lon],
+            radius=args.radius,
             angle=degs
         )
         tmp_wp_list.append([x, y])
 
-    # ver qual eh o ponto mais proximo do MAV
-    initial_wp_idx = closest_wp_idx(MAV_LOCATION, tmp_wp_list)
+    # choose the closest point to the vehicle location
+    initial_wp_idx = closest_wp_idx(
+        [args.mav_location_lat, args.mav_location_lon],
+        tmp_wp_list
+    )
 
-    selected_wp_list = select_waypoints(tmp_wp_list, initial_wp_idx)
-    for wp in selected_wp_list:
+    selected_wp_list = select_waypoints(
+        tmp_wp_list,
+        initial_wp_idx,
+        args.distance_between_lines
+    )
+    # add the vehicle location to the list
+    selected_wp_list = [[args.mav_location_lat, args.mav_location_lon], *selected_wp_list]
+    return selected_wp_list
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    wp_list = main(args)
+    for wp in wp_list:
         print("%.9f %.9f" % (wp[0], wp[1]))
