@@ -1,16 +1,9 @@
 # python3 scripts/package_delivery_flight_planning.py > flight/aruco_hunter/src/waypoints.txt
-import decimal
 import numpy as np
 from decimal import Decimal, getcontext
-from decimal import *
 
 
-MAV_LOCATION = [Decimal(52.171974), Decimal(4.417091)]
-DELIVERY_LOCATION = [Decimal(52.169916), Decimal(4.415763)]
-DISTANCE_BETWEEN_LINES = Decimal(0.0001)  # equivalent to 11.1 meters
-RADIUS = Decimal(0.001)  # equivalent to 111 meters
-
-
+# STUFF THE PYTHON LIB "DECIMAL" REQUIRES
 
 def pi():
     """Compute Pi to the current precision.
@@ -110,6 +103,7 @@ def sin(x):
     getcontext().prec -= 2
     return +s
 
+# AAAAAAAAAAAAAAAAAAAAAAA
 
 # 
 def closest_wp_idx(wp, wp_list):
@@ -125,18 +119,14 @@ def distance_point_to_line(point, line):
     return abs((y1 - y0) * point[0] - (x1 - x0) * point[1] + x1 * y0 - y1 * x0) / ((y1 - y0) ** 2 + (x1 - x0) ** 2).sqrt()
 
 
-# distancia entre dois pontos
-def distance_point_to_point(point1, point2):
-    return ((point2[0]-point1[0])**2 + (point2[1]-point1[1])**2).sqrt()
-
-
 # selecionar e ordenar os waypoints
 def select_waypoints(wp_list, initial_wp_idx):
     selected_wp_list = [MAV_LOCATION, wp_list[initial_wp_idx]]
     left_adjust = -1
     right_adjust = 1
+    right_first = True
 
-    for i in range(len(wp_list)//2):
+    for _ in range(len(wp_list)//2):
         left_idx = (initial_wp_idx + left_adjust) % 360
         right_idx = (initial_wp_idx + right_adjust) % 360
 
@@ -154,22 +144,27 @@ def select_waypoints(wp_list, initial_wp_idx):
             continue
 
         if dist_from_prev_wp > DISTANCE_BETWEEN_LINES:
-            if i == 0:
+            if right_first:
+                selected_wp_list.append(right_wp)
+                selected_wp_list.append(left_wp)
+            else:
                 selected_wp_list.append(left_wp)
                 selected_wp_list.append(right_wp)
-            else:
-                if distance_point_to_point(left_wp, selected_wp_list[-1]) < distance_point_to_point(right_wp, selected_wp_list[-1]):
-                    selected_wp_list.append(left_wp)
-                    selected_wp_list.append(right_wp)
-                else:
-                    selected_wp_list.append(right_wp)
-                    selected_wp_list.append(left_wp)
+            right_first = not right_first
 
         left_adjust -= 1
         right_adjust += 1
     return selected_wp_list
 
+
+
 if __name__ == '__main__':
+
+    MAV_LOCATION = [Decimal(52.171974), Decimal(4.417091)]
+    DELIVERY_LOCATION = [Decimal(52.169916), Decimal(4.415763)]
+    DISTANCE_BETWEEN_LINES = Decimal(0.0001)  # equivalent to 11.1 meters
+    RADIUS = Decimal(0.001)  # equivalent to 111 meters
+
     # gerar 360 pontos na circunferencia
     tmp_wp_list = []
     for degs in range(0, 360):
