@@ -1,4 +1,4 @@
-# python3 scripts/package_delivery_flight_planning.py > flight/aruco_hunter/src/waypoints.txt
+#!/usr/bin/python
 # it would be probably be better to solve this problem using analytical geometry, but I had a lot of fixed-point arithmetic trouble with it so I'm using a greedy algorithm
 import gmpy2
 
@@ -124,37 +124,37 @@ def parse_args():
     ap.add_argument(
         '--mav-location-lat',
         type=gmpy2.mpfr,
-        default=gmpy2.mpfr(52.171974),
+        # default=gmpy2.mpfr(52.171974),
         help="vehicle location latitude"
     )
     ap.add_argument(
         '--mav-location-lon',
         type=gmpy2.mpfr,
-        default=gmpy2.mpfr(4.417091),
+        # default=gmpy2.mpfr(4.417091),
         help="vehicle location longitude"
     )
     ap.add_argument(
         '--delivery-location-lat',
         type=gmpy2.mpfr,
-        default=gmpy2.mpfr(52.169916),
+        # default=gmpy2.mpfr(52.169916),
         help="package delivery location latitude"
     )
     ap.add_argument(
         '--delivery-location-lon',
         type=gmpy2.mpfr,
-        default=gmpy2.mpfr(4.415763),
+        # default=gmpy2.mpfr(4.415763),
         help="package delivery location longitude"
     )
     ap.add_argument(
         '--distance-between-lines',
         type=gmpy2.mpfr,
-        default=gmpy2.mpfr(10),
+        # default=gmpy2.mpfr(10),
         help="distance that fits in the MAV camera (in meters)"
     )
     ap.add_argument(
         '--radius',
         type=gmpy2.mpfr,
-        default=gmpy2.mpfr(100),
+        # default=gmpy2.mpfr(100),
         help="radius around package delivery location in which to look for the delivery location (in meters)"
     )
     args = ap.parse_args()

@@ -9,6 +9,7 @@
 #include <sensor_msgs/NavSatFix.h>
 
 #include <cmath>
+#include <cstdlib>
 #include <sstream>
 #include <string>
 
@@ -119,9 +120,19 @@ void aruco_detection_cb(const aruco_msgs::ArucoDetection::ConstPtr& msg) {
     }
 }
 
+
 int main(int argc, char** argv) {
+
     ros::init(argc, argv, "offb_node");
     ros::NodeHandle nh;
+
+    double delivery_location_lat, delivery_location_lon;
+    int distance_between_lines, radius;
+
+    nh.getParam("/main/delivery_location_lat", delivery_location_lat);
+    nh.getParam("/main/delivery_location_lon", delivery_location_lon);
+    nh.getParam("/main/distance_between_lines", distance_between_lines);
+    nh.getParam("/main/radius", radius);
 
     aruco_detection_sub = nh.subscribe<aruco_msgs::ArucoDetection>("/aruco_detection", 1, aruco_detection_cb);
 
@@ -179,9 +190,27 @@ int main(int argc, char** argv) {
     dest.altitude = dest_list[DEST_LIST_IDX_INITIAL_POSITION].altitude + TAKEOFF_HEIGHT;
     dest_list.push_back(dest);
 
+
+    // GENERATE MISSION WAYPOINTS FILE
+    std::string waypoints_file(getenv("XDG_RUNTIME_DIR"));
+    waypoints_file.append("/waypoints.txt");
+
+    std::string cmd = (
+        std::string("rosrun aruco_hunter scripts/generate_mission_waypoints.py ") +
+        " --mav-location-lat=" + std::to_string(dest_list[DEST_LIST_IDX_INITIAL_POSITION].latitude) +
+        " --mav-location-lon=" + std::to_string(dest_list[DEST_LIST_IDX_INITIAL_POSITION].longitude) +
+        " --delivery-location-lat=" + std::to_string(delivery_location_lat) +
+        " --delivery-location-lon=" + std::to_string(delivery_location_lon) +
+        " --distance-between-lines=" + std::to_string(distance_between_lines) +
+        " --radius=" + std::to_string(radius) +
+        " > " + waypoints_file
+    );
+    system(cmd.c_str());
+
     // read mission waypoints from a file
     std::ifstream source;
-    source.open("waypoints.txt", std::ios_base::in);
+
+    source.open(waypoints_file, std::ios_base::in);
     for (std::string line; std::getline(source, line);) {
         std::istringstream in(line);  // make a stream for the line itself
         in >> dest.latitude >> dest.longitude;

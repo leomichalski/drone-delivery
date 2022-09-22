@@ -1,0 +1,8 @@
+<launch>
+  <node pkg="aruco_hunter" type="main" name="main" output="screen" >
+    <param name="delivery_location_lat" value="52.169916" />
+    <param name="delivery_location_lon" value="4.415763" />
+    <param name="distance_between_lines" value="10" />
+    <param name="radius" value="100" />
+  </node>
+</launch> 
