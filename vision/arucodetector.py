@@ -96,12 +96,9 @@ class ArucoDetector(object):
             elapsed_time, marker_id_list, marker_center_list = self.predict(msg.image.copy())
 
             # publish a separate message for each marker id
-            # for id, center in zip(marker_id_list, marker_center_list):
-            #     prediction_msg = msgs.ArucoDetection(marker_id=id, marker_center=center, elapsed_time=elapsed_time, image_creation_time=msg.creation_time)
-            #     self.publish(prediction_msg, topics.TOPIC_ARUCO_DETECTION)
-            prediction_msg = msgs.ArucoDetection(marker_id=1, marker_center=[1,2], elapsed_time=31312, image_creation_time=msg.creation_time)
-            self.publish(prediction_msg, topics.TOPIC_ARUCO_DETECTION)
-
+            for id, center in zip(marker_id_list, marker_center_list):
+                prediction_msg = msgs.ArucoDetection(marker_id=id, marker_center=center, elapsed_time=elapsed_time, image_creation_time=msg.creation_time)
+                self.publish(prediction_msg, topics.TOPIC_ARUCO_DETECTION)
 
             print(
                 "ids:", marker_id_list,
