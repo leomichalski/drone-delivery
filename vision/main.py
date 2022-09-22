@@ -32,12 +32,12 @@ def parse_args():
     ap.add_argument(
         "--using-ros",
         action='store_true', default=False,
-        help="ros bridge to pass the computer vision information to the flight control code"
+        help="enable ros bridge to pass the computer vision information to the flight control code"
     )
     ap.add_argument(
         "--using-gazebo",
         action='store_true', default=False,
-        help="ros bridge to pass the computer vision information to the flight control code"
+        help="enable ros; enable gazebo video source to get the video from gazebo"
     )
 
     ap.add_argument(
@@ -133,22 +133,6 @@ def main(args):
     else:
         ip = utils.get_rpi_ip()
 
-
-    if (args.save_video or args.webstream_video or args.detect_aruco) and (not args.using_gazebo):
-        from videosource import VideoSource
-        video_source = VideoSource(
-            frame_width=args.frame_width,
-            frame_height=args.frame_height,
-            streaming_frame_width=args.streaming_frame_width,
-            streaming_frame_height=args.streaming_frame_height,
-            frames_per_second=args.frames_per_second,
-            rotation=args.frame_rotation,
-        )
-
-    if args.using_gazebo:
-        from rosbridge import GazeboVideoSource
-        gazebo_video_source = GazeboVideoSource()
-
     if args.webstream_video:
         from videowebstreaming import VideoWebStreaming
         video_web_streaming = VideoWebStreaming(
@@ -171,18 +155,34 @@ def main(args):
         aruco_detector = ArucoDetector()
 
     if args.using_ros:
-        from rosbridge import RosBridge
+        from rosbridge import RosBridge, RosNode
+        ros_node = RosNode()
         ros_bridge = RosBridge()
 
-    if 'video_source' in locals():
-        print('STARTING CAMERA')
-        video_source.start()
-        nodes_to_stop.append(video_source)
+    if args.using_gazebo:
+        from gazebovideosource import GazeboVideoSource
+        gazebo_video_source = GazeboVideoSource()
+
+    if (args.save_video or args.webstream_video or args.detect_aruco) and (not args.using_gazebo):
+        from pivideosource import PiVideoSource
+        pi_video_source = PiVideoSource(
+            frame_width=args.frame_width,
+            frame_height=args.frame_height,
+            streaming_frame_width=args.streaming_frame_width,
+            streaming_frame_height=args.streaming_frame_height,
+            frames_per_second=args.frames_per_second,
+            rotation=args.frame_rotation,
+        )
+
+    if 'pi_video_source' in locals():
+        print('STARTING RASPBERRY PI CAMERA')
+        pi_video_source.start()
+        nodes_to_stop.append(pi_video_source)
         # warmup the camera
         time.sleep(2)
 
-    if ('video_web_streaming' in locals()) and ('video_source' in locals()):
-        video_source.subscribe(video_web_streaming)
+    if ('video_web_streaming' in locals()) and ('pi_video_source' in locals()):
+        pi_video_source.subscribe(video_web_streaming)
 
     if ('video_web_streaming' in locals()) and ('gazebo_video_source' in locals()):
         gazebo_video_source.subscribe(video_web_streaming)
@@ -196,8 +196,8 @@ def main(args):
         )
         nodes_to_stop.append(video_web_streaming)
 
-    if ('video_saver' in locals()) and ('video_source' in locals()):
-        video_source.subscribe(video_saver)
+    if ('video_saver' in locals()) and ('pi_video_source' in locals()):
+        pi_video_source.subscribe(video_saver)
 
     if ('video_saver' in locals()) and ('gazebo_video_source' in locals()):
         gazebo_video_source.subscribe(video_saver)
@@ -207,22 +207,18 @@ def main(args):
         video_saver.start()
         nodes_to_stop.append(video_saver)
 
-    if ('aruco_detector' in locals()) and ('video_source' in locals()):
+    if ('aruco_detector' in locals()) and ('pi_video_source' in locals()):
         print('STARTING ARUCO DETECTOR')
-        video_source.subscribe(aruco_detector)
+        pi_video_source.subscribe(aruco_detector)
 
     if ('aruco_detector' in locals()) and ('gazebo_video_source' in locals()):
         print('STARTING ARUCO DETECTOR')
         gazebo_video_source.subscribe(aruco_detector)
 
-
-    if 'ros_bridge' in locals():
-        print('STARTING ROS BRIDGE')
-        ros_bridge.start()
-        nodes_to_stop.append(ros_bridge)
-
-
-
+    if 'ros_node' in locals():
+        print('STARTING ROS NODE')
+        ros_node.start()
+        nodes_to_stop.append(ros_node)
 
     if ('ros_bridge' in locals()) and ('aruco_detector' in locals()):
         aruco_detector.subscribe(ros_bridge)

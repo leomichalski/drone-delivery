@@ -2,7 +2,8 @@
 
 * [main.py](./main.py): code that glues everything together.
 
-* [videosource.py](./videosource.py): capture camera images and publish them as a topic.
+* [pivideosource.py](./pivideosource.py): capture camera images from the Raspberry Pi camera and publish them as a topic.
+* [gazebovideosource.py](./gazebovideosource.py): capture camera images from Gazebo ROS topic ("/webcam/image_raw") and publish them as a topic.
 * [videosaver.py](./videosaver.py): save the images as videos.
 * [videowebstreaming.py](./videowebstreaming.py): host a site from which is possible to see the latest image the vehicle captured.
 * [arucodetector.py](./arucodetector.py): detect ArUco markers, then publish the detections as a topic.
