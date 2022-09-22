@@ -14,7 +14,7 @@ class RosNode(object):
 
     def start(self):
         rospy.init_node(
-            node_name,
+            self.node_name,
             anonymous=self.anonymous,
             disable_signals=self.disable_signals
         )
