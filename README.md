@@ -16,7 +16,7 @@
   * **[flight](./flight)**: guidance, navigation and control (GNC) folder.
     * **[aruco_hunter](./flight/aruco_hunter)**: ROS package to find and land on an ArUco marker.
     * **[aruco_msgs](./flight/aruco_msgs)**: ROS package that define message(s) used to communicate ArUco detections from the ArUco detector node to the GNC nodes.
-  * **[scripts](./scripts)**: useful scripts and recipes.
+  * **[scripts](./scripts)**: useful instructions, scripts and recipes.
 
 
 ## Manual execution on a companion computer
