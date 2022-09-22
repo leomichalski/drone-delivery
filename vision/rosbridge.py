@@ -40,7 +40,6 @@ class RosBridge(object):
             return
 
         if topic == topics.TOPIC_ARUCO_DETECTION:
-            msg.marker_id, msg.marker_center, msg.elapsed_time, msg.image_creation_time
             self.aruco_detection_publisher.publish(
                 marker_id=msg.marker_id,
                 marker_center=msg.marker_center,
