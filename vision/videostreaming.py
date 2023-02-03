@@ -1,4 +1,3 @@
-import time
 from threading import Thread, Condition
 
 import topics
@@ -25,7 +24,6 @@ class VideoStreaming(object):
         while not self.stopped:
             with self.new_frame_condition:
                 self.new_frame_condition.wait()
-            # start_time = time.time()
             # TODO: check if producer.send() is blocking. If not, the Thread is not necessary
             # TODO: check if producer.send() has a block parameter
             self.producer.send('image-jpeg', self.latest_frame)

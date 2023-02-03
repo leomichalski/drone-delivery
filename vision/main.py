@@ -201,8 +201,6 @@ def main(args):
         print('STARTING RASPBERRY PI CAMERA')
         video_source_pi.start()
         nodes_to_stop.append(video_source_pi)
-        # warmup the camera
-        time.sleep(2)
 
     if ('video_streaming_app' in locals()) and ('video_source_pi' in locals()):
         video_source_pi.subscribe(video_streaming_app)
