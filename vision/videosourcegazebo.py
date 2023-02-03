@@ -9,7 +9,7 @@ import msgs
 import topics
 
 
-class GazeboVideoSource(object):
+class VideoSourceGazebo(object):
     def __init__(self):
         self.camera_ros_node = rospy.Subscriber("/webcam/image_raw", Image, self.analyze)
         self.subscriber_list = []

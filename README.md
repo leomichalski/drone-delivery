@@ -39,7 +39,7 @@ taskset -c 3 roslaunch mavros px4.launch
 cd drone-delivery/vision
 
 # run the computer vision code
-taskset -c 0,1,2 python3 main.py --webstream-video --detect-aruco --using-ros --frames-per-second 7
+taskset -c 0,1,2 python3 main.py --stream-video-to-app --detect-aruco --using-ros --frames-per-second 7
 
 # for more info, run
 python3 main.py --help
@@ -98,7 +98,7 @@ roslaunch aruco_hunter main.launch
 cd drone-delivery/vision
 
 # run the computer vision related code
-python3 main.py --webstream-video --detect-aruco --using-ros --using-gazebo
+python3 main.py --stream-video-to-app --detect-aruco --using-ros --using-gazebo
 
 # for more info on how to run the computer vision code, run
 python3 main.py --help

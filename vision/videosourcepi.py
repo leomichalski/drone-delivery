@@ -35,7 +35,7 @@ class ArrayOutput(PiRGBAnalysis):
         self.analyze = analyze
 
 
-class PiVideoSource(object):
+class VideoSourcePi(object):
 
     def __init__(self, frame_height, frame_width, streaming_frame_width, streaming_frame_height, frames_per_second, **kwargs):
         self.frame_height = frame_height
