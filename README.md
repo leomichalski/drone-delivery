@@ -1,11 +1,19 @@
 ## Table of contents
 
+- [Table of contents](#table-of-contents)
 - [Folder structure](#folder-structure)
 - [Manual execution on a companion computer](#manual-execution-on-a-companion-computer)
   - [How to run the Raspberry Pi code](#how-to-run-the-raspberry-pi-code)
+        - [terminal 1](#terminal-1)
+        - [terminal 2](#terminal-2)
+        - [terminal 3](#terminal-3)
 - [Simulation](#simulation)
   - [Setup](#setup)
   - [How to run the simulation](#how-to-run-the-simulation)
+        - [terminal 1](#terminal-1-1)
+        - [terminal 2](#terminal-2-1)
+        - [terminal 3](#terminal-3-1)
+        - [terminal 4 (optional)](#terminal-4-optional)
   - [Useful coords](#useful-coords)
 
 
@@ -39,7 +47,7 @@ taskset -c 3 roslaunch mavros px4.launch
 cd drone-delivery/vision
 
 # run the computer vision code
-taskset -c 0,1,2 python3 main.py --webstream-video --detect-aruco --using-ros --frames-per-second 7
+taskset -c 0,1,2 python3 main.py --stream-video-to-app --detect-aruco --using-ros --frames-per-second 7
 
 # for more info, run
 python3 main.py --help
@@ -98,7 +106,7 @@ roslaunch aruco_hunter main.launch
 cd drone-delivery/vision
 
 # run the computer vision related code
-python3 main.py --webstream-video --detect-aruco --using-ros --using-gazebo
+python3 main.py --stream-video-to-app --detect-aruco --using-ros --receive-video-from-gazebo
 
 # for more info on how to run the computer vision code, run
 python3 main.py --help

@@ -25,7 +25,7 @@ class EndpointAction(object):
         return self.response
 
 
-class VideoWebStreaming(object):
+class VideoStreamingApp(object):
 
     app = None
 

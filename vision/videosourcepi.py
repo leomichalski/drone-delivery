@@ -35,7 +35,7 @@ class ArrayOutput(PiRGBAnalysis):
         self.analyze = analyze
 
 
-class PiVideoSource(object):
+class VideoSourcePi(object):
 
     def __init__(self, frame_height, frame_width, streaming_frame_width, streaming_frame_height, frames_per_second, **kwargs):
         self.frame_height = frame_height
@@ -61,14 +61,18 @@ class PiVideoSource(object):
     def analyze_array(self, img_array):
         # numpy array (formato do opencv)
         self.publish(
-            msg=msgs.Image(image=img_array, creation_time=int(time.time())),
+            msg=msgs.Image(
+                image=img_array, creation_time=int(time.time())
+            ),
             topic=topics.TOPIC_IMAGE_ARRAY
         )
 
     def analyze_jpeg(self, buf_value):
         # imagem binaria comprimida com JPEG
         self.publish(
-            msg=msgs.Image(image=buf_value, creation_time=int(time.time())),
+            msg=msgs.Image(
+                image=buf_value, creation_time=int(time.time())
+            ),
             topic=topics.TOPIC_IMAGE_JPEG
         )
 
@@ -91,6 +95,8 @@ class PiVideoSource(object):
             # TODO: bitrate=,  # The bitrate at which video will be encoded. Defaults to 17000000 (17Mbps) if not specified. The maximum value depends on the selected H.264 level and profile. Bitrate 0 indicates the encoder should not use bitrate control (the encoder is limited by the quality only).
             # TODO: quality=,  # For the mjpeg format, use JPEG quality values between 1 and 100 (where higher values are higher quality). Quality 0 is special and seems to be a “reasonable quality” default.
         )
+        # warmup the camera
+        time.sleep(2)
 
     def stop(self):
         time.sleep(0.1)

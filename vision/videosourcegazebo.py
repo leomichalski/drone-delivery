@@ -9,7 +9,7 @@ import msgs
 import topics
 
 
-class GazeboVideoSource(object):
+class VideoSourceGazebo(object):
     def __init__(self):
         self.camera_ros_node = rospy.Subscriber("/webcam/image_raw", Image, self.analyze)
         self.subscriber_list = []
@@ -22,18 +22,18 @@ class GazeboVideoSource(object):
             subscriber.receive_msg(msg=msg, topic=topic)
 
     def analyze(self, data):
+        # for simulation purposes, consider the current time as the image creation time
+        creation_time = time.time()
+
         img_array = np.fromstring(data.data, dtype=np.uint8).reshape((data.height, data.width, 3))
         _, img_jpeg = cv2.imencode('.jpg', img_array.copy())
         img_jpeg = img_jpeg.tostring()
 
-        # for simulation purposes, consider the current time as the image creation time
-        creation_time = int(time.time())
-
         self.publish(
-            msg=msgs.Image(image=img_jpeg, creation_time=creation_time),
+            msg=msgs.Image(image=img_jpeg, creation_time=int(creation_time)),
             topic=topics.TOPIC_IMAGE_JPEG
         )
         self.publish(
-            msg=msgs.Image(image=img_array, creation_time=creation_time),
+            msg=msgs.Image(image=img_array, creation_time=int(creation_time)),
             topic=topics.TOPIC_IMAGE_ARRAY
         )

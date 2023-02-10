@@ -23,7 +23,7 @@ class RosNode(object):
         rospy.signal_shutdown("CLOSING ROS PROPERLY")
 
 
-class RosBridge(object):
+class BridgeRos(object):
     def __init__(self):
         self.subscriber_list = []
         self.aruco_detection_publisher = rospy.Publisher('aruco_detection', ArucoDetection, queue_size=10)

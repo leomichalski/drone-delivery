@@ -15,8 +15,6 @@ class ArucoDetection(object):
         self.image_creation_time = image_creation_time
 
 
-
-
 class Image(object):
     def __init__(self, image, creation_time):
         self.image = image
