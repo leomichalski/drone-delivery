@@ -5,3 +5,4 @@ Jinja2==2.10.*
 markupsafe==2.0.1
 itsdangerous==2.0.1
 pyyaml==6.0
+pyzmq==25.0.*
